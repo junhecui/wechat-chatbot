@@ -18,5 +18,9 @@
   },
   "devDependencies": {
     "@types/qrcode-terminal": "^0.12.2"
+  },
+  "scripts": {
+    "start": "ts-node bot.ts"
   }
+  
 }
