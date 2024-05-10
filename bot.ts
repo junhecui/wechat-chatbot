@@ -36,16 +36,22 @@ function onLogout (user: Contact) {
 async function onMessage (msg: Message) {
     if (msg.text().startsWith('@'.concat('temp '))) {
         let message = msg.text().substring(6)
-        log.info('Bot', message.toString())
+        log.info('Bot', message.toString())        
         
-        const sender = msg.from();
-        log.info('Contact Id:', sender?.id, 'Name:', sender?.name());
+        const sender = msg.talker()
+        log.info('Contact Id:', sender?.id, 'Name:', sender?.name())
 
-        if (message === 'ding') {
-            await msg.say('Hi ' + sender?.name() + ', dong')
+        if (message.toLowerCase().includes("hi") || message.toLowerCase().includes("hello")) {
+            await msg.say('Hello ' + sender?.name() + "!")
         }
         else {
-            await msg.say('抱歉, ' + sender?.name())
+            msg.say('抱歉, ' + sender?.name())
+            const forwardRecipient = await bot.Contact.find({id: '16043551810@c.us'})
+            
+            if (forwardRecipient) {
+                msg.forward(forwardRecipient)
+                log.info('forwarded', msg, 'to', forwardRecipient?.name())
+            }
         }
     }
 }
