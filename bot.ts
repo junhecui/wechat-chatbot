@@ -34,8 +34,9 @@ function onLogout(user: Contact) {
 }
 
 async function onMessage(msg: Message) {
-    if (msg.text().startsWith('!'.concat('bot '))) { // acts as a command '!bot help'
-        let message = msg.text().substring(5)
+    const command = '!bot'
+    if (msg.text().startsWith(command)) { // acts as a command '!bot help'
+        let message = msg.text().substring(command.length + 1)
         log.info('Bot', message.toString())
 
         const sender = msg.talker()
@@ -49,19 +50,19 @@ async function onMessage(msg: Message) {
         }
         else {
             msg.say('抱歉, ' + sender?.name())
-            // const forwardRecipient = await bot.Contact.find({id: '16043551810@c.us'}) // replace with admin id or name
+            const forwardRecipient = await bot.Contact.find({id: '16043551810@c.us'}) // replace with admin id or name
 
-            // if (forwardRecipient) {
-            //     msg.forward(forwardRecipient)
-            //     log.info('forwarded', msg, 'to', forwardRecipient?.name())
-            // }
+            if (forwardRecipient) {
+                msg.forward(forwardRecipient)
+                log.info('forwarded', msg, 'to', forwardRecipient?.name())
+            }
         }
     }
 }
 
 const bot = WechatyBuilder.build({
     name: 'bot',
-    puppet: 'wechaty-puppet-whatsapp',
+    puppet: 'wechaty-puppet-wechat4u',
 })
 
 bot.on('scan', onScan)
