@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "ts-node bot.ts"
   },
   "keywords": [],
   "author": "",
@@ -18,9 +19,6 @@
   },
   "devDependencies": {
     "@types/qrcode-terminal": "^0.12.2"
-  },
-  "scripts": {
-    "start": "ts-node bot.ts"
   }
   
 }
