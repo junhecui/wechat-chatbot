@@ -34,11 +34,20 @@ function onLogout (user: Contact) {
 }
 
 async function onMessage (msg: Message) {
-  log.info('Bot', msg.toString())
+    if (msg.text().startsWith('@'.concat('temp '))) {
+        let message = msg.text().substring(6)
+        log.info('Bot', message.toString())
+        
+        const sender = msg.from();
+        log.info('Contact Id:', sender?.id, 'Name:', sender?.name());
 
-  if (msg.text() === 'ding') {
-    await msg.say('dong')
-  }
+        if (message === 'ding') {
+            await msg.say('Hi ' + sender?.name() + ', dong')
+        }
+        else {
+            await msg.say('抱歉, ' + sender?.name())
+        }
+    }
 }
 
 const bot = WechatyBuilder.build({
