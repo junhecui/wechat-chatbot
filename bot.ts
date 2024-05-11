@@ -35,8 +35,8 @@ function onLogout(user: Contact) {
 
 async function onMessage(msg: Message) {
     const command = '!bot'
-    let toReplyTo = await bot.Contact.find({name: "Roy Cui 贷款专家 6043365777"})
     const respondCommand = '!respond'
+    let toReplyTo = await bot.Contact.find({name: "Roy Cui 贷款专家 6043365777"}) // replace with any temp value
     if (msg.text().startsWith(command)) { // acts as a command '!bot help'
         let message = msg.text().substring(command.length + 1)
         log.info('Bot', message.toString())
@@ -63,7 +63,10 @@ async function onMessage(msg: Message) {
     } else if (msg.text().startsWith(respondCommand)) {
         let message = msg.text().substring(respondCommand.length + 1)
         const sender = msg.talker()
-        await toReplyTo?.say(toReplyTo?.name() + ", " + message + " - " + sender?.name())
+        let admin = await bot.Contact.find({id: "@36e1e6a6ad11f3b709125b8e4168491cb32ad50fc132cd8a3d8951142231187b"}) // replace with admin id
+        if (admin && sender.id === admin.id) {
+            await toReplyTo?.say(toReplyTo?.name() + ", " + message + " - " + sender?.name())
+        }
     }
 }
 
