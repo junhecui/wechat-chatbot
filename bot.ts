@@ -1,4 +1,5 @@
 import 'dotenv/config.js'
+import connectToDatabase from './db';
 
 import {
     Contact,
@@ -80,6 +81,11 @@ bot.on('login', onLogin)
 bot.on('logout', onLogout)
 bot.on('message', onMessage)
 
+let dbConnection
+
 bot.start()
-    .then(() => log.info('Bot', 'Bot Started.'))
+    .then(async () => {
+        log.info('Bot', 'Bot Started.')
+        dbConnection = await connectToDatabase();
+    })
     .catch(e => log.error('Bot', e))
