@@ -35,6 +35,8 @@ function onLogout(user: Contact) {
 
 async function onMessage(msg: Message) {
     const command = '!bot'
+    let toReplyTo = await bot.Contact.find({name: "Roy Cui 贷款专家 6043365777"})
+    const respondCommand = '!respond'
     if (msg.text().startsWith(command)) { // acts as a command '!bot help'
         let message = msg.text().substring(command.length + 1)
         log.info('Bot', message.toString())
@@ -45,18 +47,23 @@ async function onMessage(msg: Message) {
         if (message.toLowerCase().includes("hi") || message.toLowerCase().includes("hello")) {
             await msg.say('Hello ' + sender?.name() + "!")
         }
-        if (message.toLowerCase().includes("help")) {
+        else if (message.toLowerCase().includes("help")) {
             await msg.say('What do you need help with?') // list out common options
         }
         else {
-            msg.say('抱歉, ' + sender?.name())
-            const forwardRecipient = await bot.Contact.find({id: '16043551810@c.us'}) // replace with admin id or name
+            await msg.say('抱歉 ' + sender?.name() + ', 我回答不了这个问题，给行政人员转发了。')
+            const forwardRecipient = await bot.Room.find({topic: 'Test Chat'}) // replace with admin id or name
 
             if (forwardRecipient) {
-                msg.forward(forwardRecipient)
-                log.info('forwarded', msg, 'to', forwardRecipient?.name())
+                await forwardRecipient.say(sender?.name() + " 提出了以下问题：" + message)
+                log.info('forwarded', message, 'to', forwardRecipient?.topic())
+                let toReplyTo = sender
             }
         }
+    } else if (msg.text().startsWith(respondCommand)) {
+        let message = msg.text().substring(respondCommand.length + 1)
+        const sender = msg.talker()
+        await toReplyTo?.say(toReplyTo?.name() + ", " + message + " - " + sender?.name())
     }
 }
 
