@@ -26,11 +26,11 @@ function onScan(qrcode: string, status: ScanStatus) {
 }
 
 function onLogin(user: Contact) {
-    log.info('Bot', '%s login', user)
+    log.info('Bot logged into', '%s', user.name())
 }
 
 function onLogout(user: Contact) {
-    log.info('Bot', '%s logout', user)
+    log.info('Bot logged out of', '%s', user.name())
 }
 
 async function onMessage(msg: Message) {
@@ -52,7 +52,7 @@ async function onMessage(msg: Message) {
         }
         else {
             await msg.say('抱歉 ' + sender?.name() + ', 我回答不了这个问题，给行政人员转发了。')
-            const forwardRecipient = await bot.Room.find({topic: 'Test Chat'}) // replace with admin id or name
+            const forwardRecipient = await bot.Room.find({id: '@@56e64cf367d97ec508bd2c6124da185a9e92d18954a5ff41e04c514cba3721dc'}) // replace with admin or room id   
 
             if (forwardRecipient) {
                 await forwardRecipient.say(sender?.name() + " 提出了以下问题：" + message)
