@@ -59,12 +59,16 @@ async function onMessage(msg: Message) {
     const messageText = msg.text()
     const sender = msg.talker()
     const senderName = sender.name()
-    const roomTopic = msg.room()?.topic()
+    const room = msg.room()
+    var topic = "No Room"
+    if (room) {
+        var topic = await room.topic()
+    }
 
-    if (dbConnection) {
+    if (dbConnection && messageText) {
         dbConnection.query(
-            'INSERT INTO messages (contact_name, contact_id, message_content) VALUES (?, ?, ?)',
-            [messageText, senderName, roomTopic],
+            'INSERT INTO messages (messageText, messageSender, roomTopic) VALUES (?, ?, ?)',
+            [messageText, senderName, topic],
             (error: MysqlError | null, results) => {
                 if (error) {
                     console.error('DB Error:', error.message);
@@ -73,9 +77,8 @@ async function onMessage(msg: Message) {
                 console.log('Message Logged to DB:', results.insertId);
             }
         );
-    } else {
-        console.log('Database connection not available.');
     }
+
     // let toReplyTo = await bot.Contact.find({name: "Roy Cui 贷款专家 6043365777"}) // replace with any temp value
     if (msg.text().startsWith(command)) { // acts as a command '!bot help'
         let message = msg.text().substring(command.length + 1)

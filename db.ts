@@ -11,7 +11,8 @@ async function connectToDatabase() {
         ssl: {
             ca: fs.readFileSync('DigiCertGlobalRootCA.crt.pem'),
             rejectUnauthorized: false
-        }
+        },
+        connectTimeout: 30000
     });
 
     console.log('Connected to the database.');
