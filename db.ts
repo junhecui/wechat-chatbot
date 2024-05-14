@@ -9,10 +9,9 @@ async function connectToDatabase() {
         database: process.env.DB_NAME,
         port: '3306',
         ssl: {
-            ca: fs.readFileSync('DigiCertGlobalRootG2.crt.pem'),
+            ca: fs.readFileSync('DigiCertGlobalRootG2.crt.pem'), // can replace with 'DigiCertGlobalRootCA.crt.pem'
             rejectUnauthorized: false
-        },
-        connectTimeout: 30000
+        }
     });
 
     console.log('Connected to the database.');
