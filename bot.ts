@@ -11,125 +11,129 @@ async function initializeDatabase() {
         dbConnection = await connectToDatabase();
         log.info('Database', 'Connected successfully');
     } catch (error) {
-        if (error instanceof Error) { 
-            log.error('Database', 'Failed to connect: ' + error.message);
-        } else {
-            log.error('Database', 'Failed to connect and error type is not standard Error.');
-        }
+        handleError('Database', 'Failed to connect', error);
         dbConnection = null;
     }
 }
 
 function onScan(qrcode: string, status: ScanStatus) {
     if (status === ScanStatus.Waiting || status === ScanStatus.Timeout) {
-        const qrcodeImageUrl = [
-            'https://wechaty.js.org/qrcode/',
-            encodeURIComponent(qrcode),
-        ].join('')
-        log.info('Bot', 'onScan: %s(%s) - %s', ScanStatus[status], status, qrcodeImageUrl)
-
-        qrcodeTerminal.generate(qrcode, { small: true })
-
+        const qrcodeImageUrl = `https://wechaty.js.org/qrcode/${encodeURIComponent(qrcode)}`;
+        log.info('Bot', 'onScan: %s(%s) - %s', ScanStatus[status], status, qrcodeImageUrl);
+        qrcodeTerminal.generate(qrcode, { small: true });
     } else {
-        log.info('Bot', 'onScan: %s(%s)', ScanStatus[status], status)
+        log.info('Bot', 'onScan: %s(%s)', ScanStatus[status], status);
     }
 }
 
 function onLogin(user: Contact) {
-    log.info('Bot logged into', '%s', user.name())
+    log.info('Bot', 'Logged into %s', user.name());
 }
 
 function onLogout(user: Contact) {
-    log.info('Bot logged out of', '%s', user.name())
+    log.info('Bot', 'Logged out of %s', user.name());
 }
 
 async function onMessage(msg: Message) {
-    const messageText = msg.text()
-    const sender = msg.talker()
-    const senderName = sender.name()
-    const room = msg.room()
-    let topic = "No Room"
-    let toReplyTo = await bot.Room.find({ topic: process.env.ADMIN_ROOM_TOPIC }) // replace with any temp value
-    let message = msg.text()
-    let respondCommand = "!respond "
+    const messageText = msg.text();
+    const sender = msg.talker();
+    const senderName = sender.name();
+    const room = msg.room();
+    const topic = room ? await room.topic() : 'No Room';
+    const adminRoomTopic = process.env.ADMIN_ROOM_TOPIC || '';
+    const respondCommand = '!respond ';
 
-    if (room) {
-        topic = await room.topic()
-    }
-
-    if (dbConnection && messageText && topic === process.env.ADMIN_ROOM_TOPIC) {
-        try {
-            const [results] = await dbConnection.execute<mysql.ResultSetHeader>(
-                'INSERT INTO messages (messageText, messageSender, roomTopic) VALUES (?, ?, ?)',
-                [messageText, senderName, topic]
-            );
-            console.log('Message Logged to DB:', results.insertId);
-        } catch (error) {
-            if (error instanceof Error) {
-                console.error('DB Error:', error.message);
-            }
-        }
+    if (dbConnection && messageText && topic === adminRoomTopic) {
+        logMessageToDatabase(messageText, senderName, topic);
     }
 
     if (msg.self()) {
-        if (message.startsWith('!add ')) {
-            await addKeyword(message);
-        } else if (message.startsWith('!editKeyword ')) {
-            await editKeyword(message);
-        } else if (message.startsWith('!editResponse ')) {
-            await editKeywordResponse(message);
-        } else if (message.startsWith('!remove ')) {
-            await removeKeyword(message);
-        }
+        handleBotCommand(messageText);
     } else {
-        type KeywordResult = {
-            keyword: string;
-            keywordResponse: string;
-        };
-
-        const searchQuery = 'SELECT keyword, keywordResponse FROM keywords';
-        try {
-            const [results] = await dbConnection!.query<mysql.RowDataPacket[]>(searchQuery);
-            let foundResponse: string | null = null;
-
-            results.forEach((result: mysql.RowDataPacket) => {
-                const { keyword, keywordResponse } = result as KeywordResult;
-                const keywords: string[] = keyword.split(','); // Split the keywords by comma
-                // Check if any keyword is contained within the message
-                keywords.forEach((keyword: string) => {
-                    if (message.includes(keyword.trim())) {
-                        foundResponse = keywordResponse;
-                    }
-                });
-            });
-
-            if (!foundResponse) {
-                console.log('No matching keyword found.');
-            } else {
-                msg.say(foundResponse);
-            }
-        } catch (error) {
-            if (error instanceof Error) {
-                console.error('Error searching for keyword:', error.message);
-            }
-        }
-
-        if (message.includes('?')) { // for catching missed messages
-            const forwardRecipient = await bot.Room.find({ topic: process.env.ADMIN_ROOM_TOPIC })
-
-            if (forwardRecipient) {
-                log.info(forwardRecipient.id)
-                await forwardRecipient.say(sender?.name() + " 提出了以下问题：" + message)
-                log.info('forwarded', message, 'to', forwardRecipient?.topic())
-            }
-        }
+        await handleIncomingMessage(msg, messageText, senderName);
     }
 
-    if (msg.text().startsWith(respondCommand)) {
-        const sender = msg.talker()
-        let admin = await bot.Contact.find({ name: process.env.ADMIN_NAME })
-        if (admin && sender.name() === admin.name()) {
-            await toReplyTo?.say(toReplyTo?.topic() + ", " + message + " - " + sender?.name())
+    if (messageText.startsWith(respondCommand)) {
+        await handleRespondCommand(msg, messageText);
+    }
+}
+
+async function logMessageToDatabase(messageText: string, senderName: string, topic: string) {
+    try {
+        const [results] = await dbConnection!.execute<mysql.ResultSetHeader>(
+            'INSERT INTO messages (messageText, messageSender, roomTopic) VALUES (?, ?, ?)',
+            [messageText, senderName, topic]
+        );
+        console.log('Message Logged to DB:', results.insertId);
+    } catch (error) {
+        handleError('DB', 'Error logging message to database', error);
+    }
+}
+
+function handleBotCommand(message: string) {
+    if (message.startsWith('!add ')) {
+        addKeyword(message);
+    } else if (message.startsWith('!editKeyword ')) {
+        editKeyword(message);
+    } else if (message.startsWith('!editResponse ')) {
+        editKeywordResponse(message);
+    } else if (message.startsWith('!remove ')) {
+        removeKeyword(message);
+    }
+}
+
+async function handleIncomingMessage(msg: Message, messageText: string, senderName: string) {
+    const foundResponse = await searchKeywordResponse(messageText);
+
+    if (foundResponse) {
+        msg.say(foundResponse);
+    } else {
+        console.log('No matching keyword found.');
+    }
+
+    if (messageText.includes('?')) {
+        await forwardMessageToAdminRoom(senderName, messageText);
+    }
+}
+
+async function searchKeywordResponse(messageText: string): Promise<string | null> {
+    const searchQuery = 'SELECT keyword, keywordResponse FROM keywords';
+
+    try {
+        const [results] = await dbConnection!.query<mysql.RowDataPacket[]>(searchQuery);
+        for (const result of results) {
+            const { keyword, keywordResponse } = result as { keyword: string, keywordResponse: string };
+            const keywords = keyword.split(',').map(k => k.trim());
+            if (keywords.some(k => messageText.includes(k))) {
+                return keywordResponse;
+            }
+        }
+    } catch (error) {
+        handleError('DB', 'Error searching for keyword', error);
+    }
+
+    return null;
+}
+
+async function forwardMessageToAdminRoom(senderName: string, message: string) {
+    const adminRoomTopic = process.env.ADMIN_ROOM_TOPIC || '';
+    const forwardRecipient = await bot.Room.find({ topic: adminRoomTopic });
+
+    if (forwardRecipient) {
+        await forwardRecipient.say(`${senderName} 提出了以下问题：${message}`);
+        log.info('forwarded', message, 'to', forwardRecipient.topic());
+    }
+}
+
+async function handleRespondCommand(msg: Message, message: string) {
+    const sender = msg.talker();
+    const adminName = process.env.ADMIN_NAME || '';
+    const admin = await bot.Contact.find({ name: adminName });
+
+    if (admin && sender.name() === admin.name()) {
+        const toReplyTo = await bot.Room.find({ topic: process.env.ADMIN_ROOM_TOPIC || '' });
+        if (toReplyTo) {
+            await toReplyTo.say(`${toReplyTo.topic()}, ${message} - ${sender.name()}`);
         }
     }
 }
@@ -149,9 +153,7 @@ async function addKeyword(message: string) {
         await dbConnection!.execute(query, [keyword, keywordResponse]);
         console.log('Keyword added successfully.');
     } catch (error) {
-        if (error instanceof Error) {
-            console.error('Error adding keyword:', error.message);
-        }
+        handleError('DB', 'Error adding keyword', error);
     }
 }
 
@@ -167,7 +169,7 @@ async function editKeyword(message: string) {
 
     try {
         const selectQuery = 'SELECT keyword FROM keywords WHERE id = ?';
-        const [rows]: any = await dbConnection!.execute<mysql.RowDataPacket[]>(selectQuery, [id]);
+        const [rows] = await dbConnection!.execute<mysql.RowDataPacket[]>(selectQuery, [id]);
 
         if (rows.length === 0) {
             console.error('No entry found for the given ID.');
@@ -181,62 +183,52 @@ async function editKeyword(message: string) {
         await dbConnection!.execute(updateQuery, [newKeyword, id]);
         console.log('Keyword updated successfully.');
     } catch (error) {
-        if (error instanceof Error) {
-            console.error('Error editing keyword:', error.message);
-        }
+        handleError('DB', 'Error editing keyword', error);
     }
 }
 
 async function editKeywordResponse(message: string) {
     const parts = message.split(' ');
-    if (parts.length < 3) {
+    const id = parts[1];
+    const newResponse = parts.slice(2).join(' ');
+
+    if (!id || !newResponse) {
         console.error('Invalid format for !editResponse command.');
         return;
     }
-    const id = parts[1];
-    const newResponse = parts.slice(2).join(' ');
 
     const updateQuery = 'UPDATE keywords SET keywordResponse = ? WHERE id = ?';
     try {
         await dbConnection!.execute(updateQuery, [newResponse, id]);
         console.log('Keyword response updated successfully.');
     } catch (error) {
-        if (error instanceof Error) {
-            console.error('Error updating keyword response:', error.message);
-        }
+        handleError('DB', 'Error updating keyword response', error);
     }
 }
 
 async function removeKeyword(message: string) {
     const parts = message.split(' ');
-    if (parts.length < 2) {
-        console.error('Invalid format for !remove command.');
-        return;
-    }
     const id = parts[1];
     const keywordToRemove = parts.slice(2).join(' ');
 
     if (keywordToRemove) {
         try {
             const selectQuery = 'SELECT keyword FROM keywords WHERE id = ?';
-            const [rows]: any = await dbConnection!.execute<mysql.RowDataPacket[]>(selectQuery, [id]);
+            const [rows] = await dbConnection!.execute<mysql.RowDataPacket[]>(selectQuery, [id]);
 
             if (rows.length === 0) {
                 console.error('No entry found for the given ID.');
                 return;
             }
 
-            const keywords = rows[0].keyword.split(',');
-            const filteredKeywords = keywords.filter((kw: string) => kw !== keywordToRemove);
-            const updatedKeywords = filteredKeywords.join(',');
+            const keywords = rows[0].keyword.split(',').filter((keyword: string) => keyword !== keywordToRemove);
+            const updatedKeywords = keywords.join(',');
 
             const updateQuery = 'UPDATE keywords SET keyword = ? WHERE id = ?';
             await dbConnection!.execute(updateQuery, [updatedKeywords, id]);
             console.log('Keyword removed successfully.');
         } catch (error) {
-            if (error instanceof Error) {
-                console.error('Error removing keyword:', error.message);
-            }
+            handleError('DB', 'Error removing keyword', error);
         }
     } else {
         try {
@@ -244,26 +236,32 @@ async function removeKeyword(message: string) {
             await dbConnection!.execute(deleteQuery, [id]);
             console.log('Keyword removed successfully.');
         } catch (error) {
-            if (error instanceof Error) {
-                console.error('Error removing keyword:', error.message);
-            }
+            handleError('DB', 'Error removing keyword', error);
         }
+    }
+}
+
+function handleError(context: string, message: string, error: unknown) {
+    if (error instanceof Error) {
+        console.error(`${context} - ${message}: ${error.message}`);
+    } else {
+        console.error(`${context} - ${message}: Non-standard error type.`);
     }
 }
 
 const bot = WechatyBuilder.build({
     name: 'bot',
     puppet: 'wechaty-puppet-wechat4u',
-})
+});
 
-bot.on('scan', onScan)
-bot.on('login', onLogin)
-bot.on('logout', onLogout)
-bot.on('message', onMessage)
+bot.on('scan', onScan);
+bot.on('login', onLogin);
+bot.on('logout', onLogout);
+bot.on('message', onMessage);
 
 bot.start()
     .then(async () => {
-        log.info('Bot', 'Bot Started.')
+        log.info('Bot', 'Bot Started.');
         await initializeDatabase();
     })
-    .catch(e => log.error('Bot', e))
+    .catch(e => log.error('Bot', e));

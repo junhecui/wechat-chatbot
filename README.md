@@ -18,7 +18,7 @@
 
 ### How to Use
 
-1. [Clone repository.](https://github.com/junhecui/chatbot)
+1. [Clone repository](https://github.com/junhecui/chatbot).
 2. Set environment variables and connect to a SQL Database.
 3. Run `npm install`.
    * If program does not function correctly, try individually installing `wechaty`, `wechaty-puppet-wechat4u`, `qrcode-terminal`, `mysql`, `mysql2`.
@@ -50,7 +50,7 @@ If you want to use administrator features, responding to messages remotely, you 
 
 ### 使用方法
 
-1. [克隆仓库。](https://github.com/junhecui/chatbot)
+1. [克隆仓库](https://github.com/junhecui/chatbot)。
 2. 设置环境变量并连接到SQL数据库。
 3. 运行 `npm install`。
    * 如果程序运行不正常，尝试分别安装wechaty, wechaty-puppet-wechat4u, qrcode-terminal, mysql, mysql2。
