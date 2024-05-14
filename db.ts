@@ -9,7 +9,7 @@ async function connectToDatabase() {
         database: process.env.DB_NAME,
         port: '3306',
         ssl: {
-            ca: fs.readFileSync('DigiCertGlobalRootCA.crt.pem'),
+            ca: fs.readFileSync('DigiCertGlobalRootG2.crt.pem'),
             rejectUnauthorized: false
         },
         connectTimeout: 30000

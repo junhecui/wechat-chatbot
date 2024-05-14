@@ -1,1 +1,0 @@
-web:WECHATY_LOG=verbose WECHATY_PUPPET=wechaty-puppet-whatsapp node bot.ts
