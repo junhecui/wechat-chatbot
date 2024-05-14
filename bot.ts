@@ -127,7 +127,7 @@ async function onMessage(msg: Message) {
 
     if (msg.text().startsWith(respondCommand)) {
         const sender = msg.talker()
-        let admin = await bot.Contact.find({ name: process.env.ADMIN_NAME }) // replace with admin name
+        let admin = await bot.Contact.find({ name: process.env.ADMIN_NAME })
         if (admin && sender.name() === admin.name()) {
             await toReplyTo?.say(toReplyTo?.topic() + ", " + message + " - " + sender?.name())
         }

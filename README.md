@@ -9,6 +9,13 @@
 * Automatically messages administrator when receiving a question (any message with a question mark).
   * Administrator response will be relayed back to the user.
 
+### Technologies Used
+
+* TypeScript
+* Node.js
+* MySQL Database
+* Wechaty Library
+
 ### How to Use
 
 1. [Clone repository.](https://github.com/junhecui/chatbot)
@@ -49,6 +56,13 @@ If you want to use administrator features, responding to messages remotely, you 
    * 如果程序运行不正常，尝试分别安装wechaty, wechaty-puppet-wechat4u, qrcode-terminal, mysql, mysql2。
 4. 使用希望机器人运行的微信账号扫描二维码。
 5. 机器人将准备就绪。
+
+### 使用技术
+
+* TypeScript
+* Node.js
+* MySQL 数据库
+* Wechaty 库
 
 ### 添加关键字/回复的说明
 
