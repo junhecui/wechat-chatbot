@@ -115,7 +115,7 @@ async function onMessage(msg: Message) {
         }
 
         if (message.includes('?')) { // for catching missed messages
-            const forwardRecipient = await bot.Room.find({ topic: 'Test Chat' }) // replace with admin id or room topic - room id changes every instance so does not work
+            const forwardRecipient = await bot.Room.find({ topic: 'Test Chat' }) // replace with room topic - id changes every instance so does not work
 
             if (forwardRecipient) {
                 log.info(forwardRecipient.id)
