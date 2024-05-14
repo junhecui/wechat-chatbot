@@ -13,7 +13,7 @@
 
 1. [Clone repository.](https://github.com/junhecui/chatbot)
 2. Set environment variables and connect to a SQL Database.
-3. `npm install`
+3. Run `npm install`.
    * If program does not function correctly, try individually installing `wechaty`, `wechaty-puppet-wechat4u`, `qrcode-terminal`, `mysql`, `mysql2`.
 4. Scan QR code with WeChat account user desires the bot to function on.
 5. The bot will be ready to function.
@@ -41,7 +41,7 @@ When the program is running:
 
 1. [克隆仓库。](https://github.com/junhecui/chatbot)
 2. 设置环境变量并连接到SQL数据库。
-3. 运行 `npm install`
+3. 运行 `npm install`。
    * 如果程序运行不正常，尝试分别安装wechaty, wechaty-puppet-wechat4u, qrcode-terminal, mysql, mysql2。
 4. 使用希望机器人运行的微信账号扫描二维码。
 5. 机器人将准备就绪。
