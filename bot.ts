@@ -1,20 +1,10 @@
 import 'dotenv/config.js'
 import connectToDatabase from './db'
 import mysql, { Connection, MysqlError } from 'mysql'
-
-
-import {
-    Contact,
-    Message,
-    ScanStatus,
-    WechatyBuilder,
-    log,
-} from 'wechaty'
-
+import { Contact, Message, ScanStatus, WechatyBuilder, log } from 'wechaty'
 import qrcodeTerminal from 'qrcode-terminal'
 
-let dbConnection: Connection | null = null
-
+let dbConnection: mysql.Connection | null = null
 
 async function initializeDatabase() {
     try {
@@ -54,15 +44,17 @@ function onLogout(user: Contact) {
 }
 
 async function onMessage(msg: Message) {
-    const command = '!bot'
-    const respondCommand = '!respond'
     const messageText = msg.text()
     const sender = msg.talker()
     const senderName = sender.name()
     const room = msg.room()
-    var topic = "No Room"
+    let topic = "No Room"
+    let toReplyTo = await bot.Room.find({topic: "Test Chat"}) // replace with any temp value
+    let message = msg.text()
+    let respondCommand = "!respond "
+
     if (room) {
-        var topic = await room.topic()
+        topic = await room.topic()
     }
 
     if (dbConnection && messageText) {
@@ -79,39 +71,148 @@ async function onMessage(msg: Message) {
         );
     }
 
-    // let toReplyTo = await bot.Contact.find({name: "Roy Cui 贷款专家 6043365777"}) // replace with any temp value
-    if (msg.text().startsWith(command)) { // acts as a command '!bot help'
-        let message = msg.text().substring(command.length + 1)
-        // log.info('Bot', message.toString())
+    if (!msg.self()) {
+        return;
+    }
 
-        // log.info('Contact Id:', sender?.id, 'Name:', sender?.name())
+    if (message.startsWith('!add ')) {
+        await addKeyword(message);
+    } else if (message.startsWith('!editKeyword ')) {
+        await editKeyword(message);
+    } else if (message.startsWith('!editResponse ')) {
+        await editKeywordResponse(message);
+    } else if (message.startsWith('!remove ')) {
+        await removeKeyword(message);
+    }
 
-        if (message.toLowerCase().includes("hi") || message.toLowerCase().includes("hello")) {
-            await msg.say('Hello ' + sender?.name() + "!")
-        }
-        else if (message.toLowerCase().includes("help")) {
-            await msg.say('What do you need help with?') // list out common options
-        }
-        else {
-            await msg.say('抱歉 ' + sender?.name() + ', 我回答不了这个问题，给行政人员转发了。')
-            // const forwardRecipient = await bot.Room.find({topic: 'Test Chat'}) // replace with admin id or room topic - room id changes every instance so does not work
+    if (message.toLowerCase().includes("hi") || message.toLowerCase().includes("hello")) {
+        await msg.say('Hello ' + sender?.name() + "!")
+    } else if (message.toLowerCase().includes("help")) {
+        await msg.say('What do you need help with?')
+    } 
+    if (message.includes('?')) {
+        await msg.say('抱歉 ' + sender?.name() + ', 我回答不了这个问题，给行政人员转发了。')
+        const forwardRecipient = await bot.Room.find({topic: 'Test Chat'}) // replace with admin id or room topic - room id changes every instance so does not work
 
-            // if (forwardRecipient) {
-            //     log.info(forwardRecipient.id)
-            //     await forwardRecipient.say(sender?.name() + " 提出了以下问题：" + message)
-            //     log.info('forwarded', message, 'to', forwardRecipient?.topic())
-            //     let toReplyTo = sender
-            // }
+        if (forwardRecipient) {
+            log.info(forwardRecipient.id)
+            await forwardRecipient.say(sender?.name() + " 提出了以下问题：" + message)
+            log.info('forwarded', message, 'to', forwardRecipient?.topic())
         }
-    // } else if (msg.text().startsWith(respondCommand)) {
-    //     let message = msg.text().substring(respondCommand.length + 1)
-    //     const sender = msg.talker()
-    //     let admin = await bot.Contact.find({name: "Jun He Cui"}) // replace with admin id
-    //     if (admin && sender.name() === admin.name()) {
-    //         await toReplyTo?.say(toReplyTo?.name() + ", " + message + " - " + sender?.name())
-    //     } else {
-    //         msg.say("hi")
-    //     }
+    }
+
+    else if (msg.text().startsWith(respondCommand)) {
+        const sender = msg.talker()
+        let admin = await bot.Contact.find({name: "Jun He Cui"}) // replace with admin id
+        if (admin && sender.name() === admin.name()) {
+            await toReplyTo?.say(toReplyTo?.topic() + ", " + message + " - " + sender?.name())
+        } else {
+            msg.say("hi")
+        }
+    }
+}
+
+async function addKeyword(message: string) {
+    const [command, keyword, keywordResponse] = message.split(' ');
+
+    if (!keyword || !keywordResponse) {
+        console.error('Invalid format for !add command.');
+        return;
+    }
+
+    const query = 'INSERT INTO keywords (keyword, keywordResponse) VALUES (?, ?)';
+    await dbConnection!.query(query, [keyword, keywordResponse]);
+    console.log('Keyword added successfully.');
+}
+
+async function editKeyword(message: string) {
+    const [command, id, keyword, keywordResponse] = message.split(' ');
+
+    if (!id || !keyword) {
+        console.error('Invalid format for !edit command.');
+        return;
+    }
+
+    const selectQuery = 'SELECT keyword, keywordResponse FROM keywords WHERE id = ?';
+    const [rows]: any = await dbConnection!.query(selectQuery, [id]);
+
+    if (rows.length === 0) {
+        console.error('No entry found for the given ID.');
+        return;
+    }
+
+    const existingKeyword = rows[0].keyword;
+    const newKeyword = `${existingKeyword},${keyword}`;
+    const newKeywordResponse = keywordResponse ? keywordResponse : rows[0].keywordResponse;
+
+    const updateQuery = 'UPDATE keywords SET keyword = ?, keywordResponse = ? WHERE id = ?';
+    await dbConnection!.query(updateQuery, [newKeyword, newKeywordResponse, id]);
+    console.log('Keyword updated successfully.');
+}
+
+async function editKeywordResponse(message: string) {
+    const parts = message.split(' ');
+    if (parts.length < 3) {
+        console.error('Invalid format for !editResponse command.');
+        return;
+    }
+    const id = parts[1];
+    const newResponse = parts.slice(2).join(' ');
+
+    const updateQuery = 'UPDATE keywords SET keywordResponse = ? WHERE id = ?';
+    dbConnection!.query(updateQuery, [newResponse, id], (updateError) => {
+        if (updateError) {
+            console.error('Error updating keyword response:', updateError.message);
+            return;
+        }
+        console.log('Keyword response updated successfully.');
+    });
+}
+
+async function removeKeyword(message: string) {
+    const parts = message.split(' ');
+    if (parts.length < 2) {
+        console.error('Invalid format for !remove command.');
+        return;
+    }
+    const id = parts[1];
+    const keywordToRemove = parts.slice(2).join(' ');
+
+    if (keywordToRemove) {
+        const selectQuery = 'SELECT keyword FROM keywords WHERE id = ?';
+        dbConnection!.query(selectQuery, [id], (selectError, rows) => {
+            if (selectError) {
+                console.error('Error selecting keyword:', selectError.message);
+                return;
+            }
+
+            if (rows.length === 0) {
+                console.error('No entry found for the given ID.');
+                return;
+            }
+
+            const keywords = rows[0].keyword.split(',');
+            const filteredKeywords = keywords.filter((kw: string) => kw !== keywordToRemove);
+            const updatedKeywords = filteredKeywords.join(',');
+
+            const updateQuery = 'UPDATE keywords SET keyword = ? WHERE id = ?';
+            dbConnection!.query(updateQuery, [updatedKeywords, id], (updateError) => {
+                if (updateError) {
+                    console.error('Error updating keyword:', updateError.message);
+                    return;
+                }
+                console.log('Keyword updated successfully.');
+            });
+        });
+    } else {
+        const deleteQuery = 'DELETE FROM keywords WHERE id = ?';
+        dbConnection!.query(deleteQuery, [id], (deleteError) => {
+            if (deleteError) {
+                console.error('Error removing keyword:', deleteError.message);
+                return;
+            }
+            console.log('Keyword removed successfully.');
+        });
     }
 }
 
@@ -125,14 +226,9 @@ bot.on('login', onLogin)
 bot.on('logout', onLogout)
 bot.on('message', onMessage)
 
-
 bot.start()
     .then(async () => {
         log.info('Bot', 'Bot Started.')
         await initializeDatabase();
     })
     .catch(e => log.error('Bot', e))
-
-
-    
-    
