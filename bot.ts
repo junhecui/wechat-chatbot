@@ -49,7 +49,7 @@ async function onMessage(msg: Message) {
     const senderName = sender.name()
     const room = msg.room()
     let topic = "No Room"
-    let toReplyTo = await bot.Room.find({ topic: "Test Chat" }) // replace with any temp value
+    let toReplyTo = await bot.Room.find({ topic: process.env.ADMIN_ROOM_TOPIC }) // replace with any temp value
     let message = msg.text()
     let respondCommand = "!respond "
 
@@ -57,7 +57,7 @@ async function onMessage(msg: Message) {
         topic = await room.topic()
     }
 
-    if (dbConnection && messageText && topic === 'Test Chat') {
+    if (dbConnection && messageText && topic === process.env.ADMIN_ROOM_TOPIC) {
         try {
             const [results] = await dbConnection.execute<mysql.ResultSetHeader>(
                 'INSERT INTO messages (messageText, messageSender, roomTopic) VALUES (?, ?, ?)',
@@ -115,7 +115,7 @@ async function onMessage(msg: Message) {
         }
 
         if (message.includes('?')) { // for catching missed messages
-            const forwardRecipient = await bot.Room.find({ topic: 'Test Chat' }) // replace with room topic - id changes every instance so does not work
+            const forwardRecipient = await bot.Room.find({ topic: process.env.ADMIN_ROOM_TOPIC })
 
             if (forwardRecipient) {
                 log.info(forwardRecipient.id)
@@ -127,7 +127,7 @@ async function onMessage(msg: Message) {
 
     if (msg.text().startsWith(respondCommand)) {
         const sender = msg.talker()
-        let admin = await bot.Contact.find({ name: "Jun He Cui" }) // replace with admin name
+        let admin = await bot.Contact.find({ name: process.env.ADMIN_NAME }) // replace with admin name
         if (admin && sender.name() === admin.name()) {
             await toReplyTo?.say(toReplyTo?.topic() + ", " + message + " - " + sender?.name())
         }
