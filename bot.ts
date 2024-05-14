@@ -11,7 +11,7 @@ async function initializeDatabase() {
         dbConnection = await connectToDatabase();
         log.info('Database', 'Connected successfully');
     } catch (error) {
-        if (error instanceof Error) { // Proper type checking
+        if (error instanceof Error) { 
             log.error('Database', 'Failed to connect: ' + error.message);
         } else {
             log.error('Database', 'Failed to connect and error type is not standard Error.');
@@ -71,25 +71,18 @@ async function onMessage(msg: Message) {
         );
     }
 
-    if (!msg.self()) {
-        return;
+    if (msg.self()) {
+        if (message.startsWith('!add ')) {
+            await addKeyword(message);
+        } else if (message.startsWith('!editKeyword ')) {
+            await editKeyword(message);
+        } else if (message.startsWith('!editResponse ')) {
+            await editKeywordResponse(message);
+        } else if (message.startsWith('!remove ')) {
+            await removeKeyword(message);
+        }
     }
 
-    if (message.startsWith('!add ')) {
-        await addKeyword(message);
-    } else if (message.startsWith('!editKeyword ')) {
-        await editKeyword(message);
-    } else if (message.startsWith('!editResponse ')) {
-        await editKeywordResponse(message);
-    } else if (message.startsWith('!remove ')) {
-        await removeKeyword(message);
-    }
-
-    if (message.toLowerCase().includes("hi") || message.toLowerCase().includes("hello")) {
-        await msg.say('Hello ' + sender?.name() + "!")
-    } else if (message.toLowerCase().includes("help")) {
-        await msg.say('What do you need help with?')
-    } 
     if (message.includes('?')) {
         await msg.say('抱歉 ' + sender?.name() + ', 我回答不了这个问题，给行政人员转发了。')
         const forwardRecipient = await bot.Room.find({topic: 'Test Chat'}) // replace with admin id or room topic - room id changes every instance so does not work
@@ -101,13 +94,11 @@ async function onMessage(msg: Message) {
         }
     }
 
-    else if (msg.text().startsWith(respondCommand)) {
+    if (msg.text().startsWith(respondCommand)) {
         const sender = msg.talker()
-        let admin = await bot.Contact.find({name: "Jun He Cui"}) // replace with admin id
+        let admin = await bot.Contact.find({name: "Jun He Cui"}) // replace with admin name
         if (admin && sender.name() === admin.name()) {
             await toReplyTo?.say(toReplyTo?.topic() + ", " + message + " - " + sender?.name())
-        } else {
-            msg.say("hi")
         }
     }
 }
@@ -126,14 +117,14 @@ async function addKeyword(message: string) {
 }
 
 async function editKeyword(message: string) {
-    const [command, id, keyword, keywordResponse] = message.split(' ');
+    const [command, id, keyword] = message.split(' ');
 
     if (!id || !keyword) {
         console.error('Invalid format for !edit command.');
         return;
     }
 
-    const selectQuery = 'SELECT keyword, keywordResponse FROM keywords WHERE id = ?';
+    const selectQuery = 'SELECT keyword FROM keywords WHERE id = ?';
     const [rows]: any = await dbConnection!.query(selectQuery, [id]);
 
     if (rows.length === 0) {
@@ -143,10 +134,9 @@ async function editKeyword(message: string) {
 
     const existingKeyword = rows[0].keyword;
     const newKeyword = `${existingKeyword},${keyword}`;
-    const newKeywordResponse = keywordResponse ? keywordResponse : rows[0].keywordResponse;
 
-    const updateQuery = 'UPDATE keywords SET keyword = ?, keywordResponse = ? WHERE id = ?';
-    await dbConnection!.query(updateQuery, [newKeyword, newKeywordResponse, id]);
+    const updateQuery = 'UPDATE keywords SET keyword = ? WHERE id = ?';
+    await dbConnection!.query(updateQuery, [newKeyword, id]);
     console.log('Keyword updated successfully.');
 }
 
@@ -179,31 +169,28 @@ async function removeKeyword(message: string) {
     const keywordToRemove = parts.slice(2).join(' ');
 
     if (keywordToRemove) {
+        const [command, id, keyword] = message.split(' ');
+
+        if (!id || !keyword) {
+            console.error('Invalid format for !edit command.');
+            return;
+        }
+
         const selectQuery = 'SELECT keyword FROM keywords WHERE id = ?';
-        dbConnection!.query(selectQuery, [id], (selectError, rows) => {
-            if (selectError) {
-                console.error('Error selecting keyword:', selectError.message);
-                return;
-            }
+        const [rows]: any = await dbConnection!.query(selectQuery, [id]);
 
-            if (rows.length === 0) {
-                console.error('No entry found for the given ID.');
-                return;
-            }
+        if (rows.length === 0) {
+            console.error('No entry found for the given ID.');
+            return;
+        }
 
-            const keywords = rows[0].keyword.split(',');
-            const filteredKeywords = keywords.filter((kw: string) => kw !== keywordToRemove);
-            const updatedKeywords = filteredKeywords.join(',');
+        const keywords = rows[0].keyword.split(',');
+        const filteredKeywords = keywords.filter((kw: string) => kw !== keywordToRemove);
+        const updatedKeywords = filteredKeywords.join(',');
 
-            const updateQuery = 'UPDATE keywords SET keyword = ? WHERE id = ?';
-            dbConnection!.query(updateQuery, [updatedKeywords, id], (updateError) => {
-                if (updateError) {
-                    console.error('Error updating keyword:', updateError.message);
-                    return;
-                }
-                console.log('Keyword updated successfully.');
-            });
-        });
+        const updateQuery = 'UPDATE keywords SET keyword = ? WHERE id = ?';
+        await dbConnection!.query(updateQuery, [updatedKeywords, id]);
+        console.log('Keyword removed successfully.');
     } else {
         const deleteQuery = 'DELETE FROM keywords WHERE id = ?';
         dbConnection!.query(deleteQuery, [id], (deleteError) => {
