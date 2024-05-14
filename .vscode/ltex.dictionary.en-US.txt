@@ -1,0 +1,6 @@
+wechaty
+qrcode-terminal
+mysql
+editKeyword
+editResponse
+ChatBot
