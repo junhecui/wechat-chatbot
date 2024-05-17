@@ -3,6 +3,7 @@ import connectToDatabase from './db'
 import mysql from 'mysql2/promise'
 import { Contact, Message, ScanStatus, WechatyBuilder, log } from 'wechaty'
 import qrcodeTerminal from 'qrcode-terminal'
+import axios from 'axios'
 
 let dbConnection: mysql.Connection | null = null
 
