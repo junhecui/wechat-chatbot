@@ -7,6 +7,7 @@ import axios from 'axios';
 import { ResultSetHeader } from 'mysql2';
 
 let dbConnection: mysql.Connection | null = null;
+let lastMessageId: number | null = null;
 
 async function initializeDatabase() {
     try {
@@ -53,6 +54,7 @@ async function onMessage(msg: Message) {
 
     if (msg.self()) {
         handleBotCommand(messageText);
+        await updateMessageResponse(messageText); // Update response only when msg.self() is true
     } else {
         await handleIncomingMessage(msg, messageText, senderName, lang);
     }
@@ -80,9 +82,28 @@ async function logMessageToDatabase(messageText: string, senderName: string, top
             'INSERT INTO messages (messageText, embedding, messageSender, roomTopic, response) VALUES (?, ?, ?, ?, ?)',
             [messageText, embeddingBuffer, senderName, topic, '']
         );
-        console.log('Message logged to DB with ID:', results.insertId);
+        lastMessageId = results.insertId;  // Store the last message ID
+        console.log('Message logged to DB with ID:', lastMessageId);
     } catch (error) {
         handleError('DB', 'Error logging message to database', error);
+    }
+}
+
+async function updateMessageResponse(responseText: string) {
+    if (lastMessageId === null) {
+        console.error('No message to update with response');
+        return;
+    }
+
+    try {
+        const [results] = await dbConnection!.execute<ResultSetHeader>(
+            'UPDATE messages SET response = ? WHERE id = ?',
+            [responseText, lastMessageId]
+        );
+        console.log('Updated message response in DB with ID:', lastMessageId);
+        lastMessageId = null;  // Reset lastMessageId after updating
+    } catch (error) {
+        handleError('DB', 'Error updating message response in database', error);
     }
 }
 
