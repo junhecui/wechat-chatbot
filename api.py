@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 import numpy as np
 import os
 
-# Explicitly load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)

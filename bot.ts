@@ -4,6 +4,7 @@ import mysql from 'mysql2/promise';
 import { Contact, Message, ScanStatus, WechatyBuilder, log } from 'wechaty';
 import qrcodeTerminal from 'qrcode-terminal';
 import axios from 'axios';
+import { ResultSetHeader } from 'mysql2';
 
 let dbConnection: mysql.Connection | null = null;
 
@@ -63,16 +64,23 @@ async function onMessage(msg: Message) {
 
 async function logMessageToDatabase(messageText: string, senderName: string, topic: string, lang: string) {
     try {
+        console.log('Attempting to get embedding for:', messageText);
         const response = await axios.post('http://localhost:4999/embedding', { text: messageText, lang });
-        const embedding = response.data;
+        console.log('Embedding response:', response.data);
 
-        // Log the embedding to verify its structure
-        console.log('Received embedding:', embedding);
+        const embedding = response.data.embedding;
+        if (!Array.isArray(embedding)) {
+            throw new Error('Invalid embedding format');
+        }
 
-        const [results] = await dbConnection!.execute(
+        const embeddingBuffer = Buffer.from(new Float32Array(embedding).buffer);
+        console.log('Embedding buffer:', embeddingBuffer);
+
+        const [results] = await dbConnection!.execute<ResultSetHeader>(
             'INSERT INTO messages (messageText, embedding, messageSender, roomTopic, response) VALUES (?, ?, ?, ?, ?)',
-            [messageText, Buffer.from(new Float32Array(embedding).buffer), senderName, topic, '']
+            [messageText, embeddingBuffer, senderName, topic, '']
         );
+        console.log('Message logged to DB with ID:', results.insertId);
     } catch (error) {
         handleError('DB', 'Error logging message to database', error);
     }
@@ -263,11 +271,44 @@ async function removeKeyword(message: string) {
     }
 }
 
+type AggregateError = {
+    errors: any[];
+};
+
+function isAggregateError(error: unknown): error is AggregateError {
+    return typeof error === 'object' && error !== null && 'errors' in error && Array.isArray((error as any).errors);
+}
+
 function handleError(context: string, message: string, error: unknown) {
     if (error instanceof Error) {
         console.error(`${context} - ${message}: ${error.message}`);
+        if (error.stack) {
+            console.error('Stack trace:', error.stack);
+        }
+        // Specific logging for Axios errors
+        if (axios.isAxiosError(error)) {
+            console.error('Axios error details:', {
+                url: error.config?.url,
+                method: error.config?.method,
+                data: error.config?.data,
+                headers: error.config?.headers,
+                response: error.response ? {
+                    status: error.response.status,
+                    data: error.response.data,
+                } : 'No response'
+            });
+        }
+    } else if (typeof error === 'object' && error !== null && 'response' in error) {
+        const errResponse = (error as any).response;
+        console.error(`${context} - ${message}:`, errResponse.data);
+        console.error('Error response status:', errResponse.status);
+    } else if (isAggregateError(error)) {
+        console.error(`${context} - ${message}: Multiple errors`);
+        for (const e of error.errors) {
+            console.error(e);
+        }
     } else {
-        console.error(`${context} - ${message}: Non-standard error type.`);
+        console.error(`${context} - ${message}:`, error);
     }
 }
 
