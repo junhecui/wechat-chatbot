@@ -6,3 +6,4 @@ bot.memory-card.json
 .env
 TODO.md
 tsconfig.json
+__pycache__

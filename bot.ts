@@ -1,11 +1,11 @@
-import 'dotenv/config.js'
-import connectToDatabase from './db'
-import mysql from 'mysql2/promise'
-import { Contact, Message, ScanStatus, WechatyBuilder, log } from 'wechaty'
-import qrcodeTerminal from 'qrcode-terminal'
-import axios from 'axios'
+import 'dotenv/config';
+import connectToDatabase from './db';
+import mysql from 'mysql2/promise';
+import { Contact, Message, ScanStatus, WechatyBuilder, log } from 'wechaty';
+import qrcodeTerminal from 'qrcode-terminal';
+import axios from 'axios';
 
-let dbConnection: mysql.Connection | null = null
+let dbConnection: mysql.Connection | null = null;
 
 async function initializeDatabase() {
     try {
@@ -44,14 +44,16 @@ async function onMessage(msg: Message) {
     const adminRoomTopic = process.env.ADMIN_ROOM_TOPIC || '';
     const respondCommand = '!respond ';
 
+    const lang = /[\u4e00-\u9fa5]/.test(messageText) ? 'zh' : 'en';
+
     if (dbConnection && messageText && topic === adminRoomTopic) {
-        logMessageToDatabase(messageText, senderName, topic);
+        await logMessageToDatabase(messageText, senderName, topic, lang);
     }
 
     if (msg.self()) {
         handleBotCommand(messageText);
     } else {
-        await handleIncomingMessage(msg, messageText, senderName);
+        await handleIncomingMessage(msg, messageText, senderName, lang);
     }
 
     if (messageText.startsWith(respondCommand)) {
@@ -59,13 +61,18 @@ async function onMessage(msg: Message) {
     }
 }
 
-async function logMessageToDatabase(messageText: string, senderName: string, topic: string) {
+async function logMessageToDatabase(messageText: string, senderName: string, topic: string, lang: string) {
     try {
-        const [results] = await dbConnection!.execute<mysql.ResultSetHeader>(
-            'INSERT INTO messages (messageText, messageSender, roomTopic) VALUES (?, ?, ?)',
-            [messageText, senderName, topic]
+        const response = await axios.post('http://localhost:4999/embedding', { text: messageText, lang });
+        const embedding = response.data;
+
+        // Log the embedding to verify its structure
+        console.log('Received embedding:', embedding);
+
+        const [results] = await dbConnection!.execute(
+            'INSERT INTO messages (messageText, embedding, messageSender, roomTopic, response) VALUES (?, ?, ?, ?, ?)',
+            [messageText, Buffer.from(new Float32Array(embedding).buffer), senderName, topic, '']
         );
-        console.log('Message Logged to DB:', results.insertId);
     } catch (error) {
         handleError('DB', 'Error logging message to database', error);
     }
@@ -83,8 +90,8 @@ function handleBotCommand(message: string) {
     }
 }
 
-async function handleIncomingMessage(msg: Message, messageText: string, senderName: string) {
-    const foundResponse = await searchKeywordResponse(messageText);
+async function handleIncomingMessage(msg: Message, messageText: string, senderName: string, lang: string) {
+    const foundResponse = await searchSimilarMessageResponse(messageText, lang);
 
     if (foundResponse) {
         msg.say(foundResponse);
@@ -97,20 +104,34 @@ async function handleIncomingMessage(msg: Message, messageText: string, senderNa
     }
 }
 
-async function searchKeywordResponse(messageText: string): Promise<string | null> {
-    const searchQuery = 'SELECT keyword, keywordResponse FROM keywords';
-
+async function searchSimilarMessageResponse(messageText: string, lang: string): Promise<string | null> {
     try {
-        const [results] = await dbConnection!.query<mysql.RowDataPacket[]>(searchQuery);
-        for (const result of results) {
-            const { keyword, keywordResponse } = result as { keyword: string, keywordResponse: string };
-            const keywords = keyword.split(',').map(k => k.trim());
-            if (keywords.some(k => messageText.includes(k))) {
-                return keywordResponse;
+        const response = await axios.post('http://localhost:4999/embedding', { text: messageText, lang });
+        const inputEmbedding = response.data.embedding;
+
+        const [results] = await dbConnection!.query<mysql.RowDataPacket[]>('SELECT messageText, embedding, response FROM messages');
+        let maxSimilarity = -1;
+        let bestMatchResponse: string | null = null;
+
+        for (const row of results) {
+            const { messageText, embedding, response } = row;
+            const storedEmbedding = new Float32Array(Buffer.from(embedding));
+
+            const similarityResponse = await axios.post('http://localhost:4999/similarity', {
+                embedding1: inputEmbedding,
+                embedding2: Array.from(storedEmbedding)
+            });
+            const similarity = similarityResponse.data.similarity;
+
+            if (similarity > maxSimilarity) {
+                maxSimilarity = similarity;
+                bestMatchResponse = response;
             }
         }
+
+        return bestMatchResponse;
     } catch (error) {
-        handleError('DB', 'Error searching for keyword', error);
+        handleError('DB', 'Error searching for similar message', error);
     }
 
     return null;

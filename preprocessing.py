@@ -3,7 +3,6 @@ from sentence_transformers import SentenceTransformer
 import stanza
 import nltk
 from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
 
 # Downloading English / Chinese models for stanza (if using other languages, import their stopwords)
 stanza.download('en')
@@ -14,7 +13,7 @@ nlp_zh = stanza.Pipeline('zh')
 nltk.download('stopwords')
 nltk.download('punkt')
 
-model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
+model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 
 EN_STOP_WORDS = set(stopwords.words('english'))
 with open('stopwords-zh.txt', encoding='utf-8') as f:
@@ -36,7 +35,6 @@ def get_embedding(text, lang='en'):
     preprocessed_text = preprocess_text(text, lang)
     embedding = model.encode(preprocessed_text)
     return embedding
-
 
 def cosine_similarity(embedding1, embedding2):
     dot_product = np.dot(embedding1, embedding2)
