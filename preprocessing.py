@@ -4,16 +4,13 @@ import stanza
 import nltk
 from nltk.corpus import stopwords
 
-# Downloading English / Chinese models for stanza (if using other languages, import their stopwords)
+# Initialize models and stopwords
 stanza.download('en')
 stanza.download('zh')
-
 nlp_en = stanza.Pipeline('en')
 nlp_zh = stanza.Pipeline('zh')
 nltk.download('stopwords')
-nltk.download('punkt')
-
-model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
 
 EN_STOP_WORDS = set(stopwords.words('english'))
 with open('stopwords-zh.txt', encoding='utf-8') as f:
@@ -28,15 +25,20 @@ def preprocess_text(text, lang='en'):
         tokens = [word.text for sent in doc.sentences for word in sent.words if word.text not in ZH_STOP_WORDS and word.upos != 'PUNCT']
     else:
         raise ValueError(f"Unsupported language: {lang}")
-    
+
     return ' '.join(tokens)
 
 def get_embedding(text, lang='en'):
     preprocessed_text = preprocess_text(text, lang)
     embedding = model.encode(preprocessed_text)
+    print(f"Generated embedding dimension: {len(embedding)}")
+    if len(embedding) != 384:
+        raise ValueError(f"Unexpected embedding dimension: {len(embedding)}")
     return embedding
 
 def cosine_similarity(embedding1, embedding2):
+    if len(embedding1) != len(embedding2):
+        raise ValueError(f"Embedding dimensions do not match: {len(embedding1)} vs {len(embedding2)}")
     dot_product = np.dot(embedding1, embedding2)
     magnitude1 = np.linalg.norm(embedding1)
     magnitude2 = np.linalg.norm(embedding2)

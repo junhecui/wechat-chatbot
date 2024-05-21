@@ -49,16 +49,12 @@ async function onMessage(msg: Message) {
     const lang = /[\u4e00-\u9fa5]/.test(messageText) ? 'zh' : 'en';
 
     if (msg.self()) {
-        await updateMessageResponse(messageText); // Update response only when msg.self() is true
-    }
-
-    if (dbConnection && messageText && topic === adminRoomTopic) {
-        await logMessageToDatabase(messageText, senderName, topic, lang);
-    }
-
-    if (msg.self()) {
         handleBotCommand(messageText);
+        await updateMessageResponse(messageText);
     } else {
+        if (dbConnection && messageText && topic === adminRoomTopic) {
+            await logMessageToDatabase(messageText, senderName, topic, lang);
+        }
         await handleIncomingMessage(msg, messageText, senderName, lang);
     }
 
@@ -71,21 +67,25 @@ async function logMessageToDatabase(messageText: string, senderName: string, top
     try {
         console.log('Attempting to get embedding for:', messageText);
         const response = await axios.post('http://localhost:4999/embedding', { text: messageText, lang });
-        console.log('Embedding response:', response.data);
-
         const embedding = response.data.embedding;
-        if (!Array.isArray(embedding)) {
-            throw new Error('Invalid embedding format');
+
+        if (!Array.isArray(embedding) || embedding.length !== 384) {
+            throw new Error('Invalid embedding format or dimension');
         }
 
-        const embeddingBuffer = Buffer.from(new Float32Array(embedding).buffer);
-        console.log('Embedding buffer:', embeddingBuffer);
+        console.log('Generated embedding dimension:', embedding.length);
+
+        const buffer = Buffer.alloc(embedding.length * 4);
+        for (let i = 0; i < embedding.length; i++) {
+            buffer.writeFloatBE(embedding[i], i * 4);
+        }
+        console.log('Embedding buffer:', buffer);
 
         const [results] = await dbConnection!.execute<ResultSetHeader>(
             'INSERT INTO messages (messageText, embedding, messageSender, roomTopic, response) VALUES (?, ?, ?, ?, ?)',
-            [messageText, embeddingBuffer, senderName, topic, '']
+            [messageText, buffer, senderName, topic, '']
         );
-        lastMessageId = results.insertId;  // Store the last message ID
+        lastMessageId = results.insertId;
         console.log('Message logged to DB with ID:', lastMessageId);
     } catch (error) {
         handleError('DB', 'Error logging message to database', error);
@@ -141,13 +141,27 @@ async function searchSimilarMessageResponse(messageText: string, lang: string): 
         const response = await axios.post('http://localhost:4999/embedding', { text: messageText, lang });
         const inputEmbedding = response.data.embedding;
 
+        console.log('Input embedding dimension:', inputEmbedding.length);
+
         const [results] = await dbConnection!.query<mysql.RowDataPacket[]>('SELECT messageText, embedding, response FROM messages');
+        
+        if (results.length === 0) {
+            console.log('No entries found in the database.');
+            return null;
+        }
+
         let maxSimilarity = -1;
         let bestMatchResponse: string | null = null;
 
         for (const row of results) {
             const { messageText, embedding, response } = row;
-            const storedEmbedding = new Float32Array(Buffer.from(embedding));
+            const storedBuffer = Buffer.from(embedding);
+            const storedEmbedding = new Float32Array(storedBuffer.length / 4);
+            for (let i = 0; i < storedEmbedding.length; i++) {
+                storedEmbedding[i] = storedBuffer.readFloatBE(i * 4);
+            }
+
+            console.log('Stored embedding dimension:', storedEmbedding.length);
 
             const similarityResponse = await axios.post('http://localhost:4999/similarity', {
                 embedding1: inputEmbedding,
