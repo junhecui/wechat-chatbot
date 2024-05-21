@@ -48,13 +48,16 @@ async function onMessage(msg: Message) {
 
     const lang = /[\u4e00-\u9fa5]/.test(messageText) ? 'zh' : 'en';
 
+    if (msg.self()) {
+        await updateMessageResponse(messageText); // Update response only when msg.self() is true
+    }
+
     if (dbConnection && messageText && topic === adminRoomTopic) {
         await logMessageToDatabase(messageText, senderName, topic, lang);
     }
 
     if (msg.self()) {
         handleBotCommand(messageText);
-        await updateMessageResponse(messageText); // Update response only when msg.self() is true
     } else {
         await handleIncomingMessage(msg, messageText, senderName, lang);
     }
