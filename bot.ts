@@ -69,7 +69,7 @@ async function logMessageToDatabase(messageText: string, senderName: string, top
         const response = await axios.post('http://localhost:4999/embedding', { text: messageText, lang });
         const embedding = response.data.embedding;
 
-        if (!Array.isArray(embedding) || embedding.length !== 384) {
+        if (!Array.isArray(embedding) || (embedding.length !== 384 && embedding.length !== 768)) {
             throw new Error('Invalid embedding format or dimension');
         }
 
@@ -123,10 +123,12 @@ function handleBotCommand(message: string) {
 }
 
 async function handleIncomingMessage(msg: Message, messageText: string, senderName: string, lang: string) {
+    console.log('Handling incoming message:', messageText);
     const foundResponse = await searchSimilarMessageResponse(messageText, lang);
 
     if (foundResponse) {
-        msg.say(foundResponse);
+        console.log('Found response:', foundResponse);
+        await msg.say(foundResponse);
     } else {
         console.log('No matching keyword found.');
     }
@@ -138,30 +140,42 @@ async function handleIncomingMessage(msg: Message, messageText: string, senderNa
 
 async function searchSimilarMessageResponse(messageText: string, lang: string): Promise<string | null> {
     try {
+        console.log('Generating embedding for:', messageText);
         const response = await axios.post('http://localhost:4999/embedding', { text: messageText, lang });
         const inputEmbedding = response.data.embedding;
 
         console.log('Input embedding dimension:', inputEmbedding.length);
+        console.log('Input embedding vector:', inputEmbedding);
 
-        const [results] = await dbConnection!.query<mysql.RowDataPacket[]>('SELECT messageText, embedding, response FROM messages');
-        
+        const [results] = await dbConnection!.query<mysql.RowDataPacket[]>('SELECT id, messageText, embedding, response FROM messages');
+
         if (results.length === 0) {
             console.log('No entries found in the database.');
             return null;
         }
 
-        let maxSimilarity = -1;
+        // Set maxSimilarity based on language
+        let maxSimilarity = lang === 'zh' ? 0.65 : 0.65;
         let bestMatchResponse: string | null = null;
 
         for (const row of results) {
-            const { messageText, embedding, response } = row;
+            const { id, messageText: storedMessageText, embedding, response } = row;
+
+            // Skip the current message and entries with empty responses
+            if (id === lastMessageId || !response) continue;
+
             const storedBuffer = Buffer.from(embedding);
             const storedEmbedding = new Float32Array(storedBuffer.length / 4);
             for (let i = 0; i < storedEmbedding.length; i++) {
                 storedEmbedding[i] = storedBuffer.readFloatBE(i * 4);
             }
 
+            // Skip embeddings with non-matching dimensions
+            if (storedEmbedding.length !== inputEmbedding.length) continue;
+
+            console.log('Stored message text:', storedMessageText);
             console.log('Stored embedding dimension:', storedEmbedding.length);
+            console.log('Stored embedding vector:', Array.from(storedEmbedding));
 
             const similarityResponse = await axios.post('http://localhost:4999/similarity', {
                 embedding1: inputEmbedding,
@@ -169,11 +183,16 @@ async function searchSimilarMessageResponse(messageText: string, lang: string): 
             });
             const similarity = similarityResponse.data.similarity;
 
+            console.log(`Similarity with "${storedMessageText}":`, similarity);
+
             if (similarity > maxSimilarity) {
                 maxSimilarity = similarity;
                 bestMatchResponse = response;
             }
         }
+
+        console.log('Best match response:', bestMatchResponse);
+        console.log('Maximum similarity:', maxSimilarity);
 
         return bestMatchResponse;
     } catch (error) {
