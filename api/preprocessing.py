@@ -5,6 +5,10 @@ import stanza
 import nltk
 from nltk.corpus import stopwords
 from flask import Flask, request, jsonify
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+stopwords_path = os.path.join(current_dir, '../config/stopwords-zh.txt')
 
 # Initialize models and stopwords
 stanza.download('en')
@@ -16,7 +20,7 @@ model_en = SentenceTransformer('paraphrase-MiniLM-L6-v2')
 model_zh = SentenceTransformer('shibing624/text2vec-base-chinese')
 
 EN_STOP_WORDS = set(stopwords.words('english'))
-with open('stopwords-zh.txt', encoding='utf-8') as f:
+with open(stopwords_path, encoding='utf-8') as f:
     ZH_STOP_WORDS = set(line.strip() for line in f)
 
 def preprocess_text(text, lang='en'):

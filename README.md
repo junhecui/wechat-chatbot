@@ -1,20 +1,29 @@
-# WeChat ChatBot
+# WeChat Helper Bot
 
 ## English
 
-### Functions
+### Features
+
+#### Automatic Similar Message Response
+
+* Uses pre-trained models to automatically respond to messages based on similar historical prompts.
+
+#### Manual Keyword Input
 
 * Automatically respond to messages containing keywords.
   * Ability to add / remove responses within messaging service.
+
+#### Question Relay Feature
+
 * Automatically messages administrator when receiving a question (any message with a question mark).
   * Administrator response will be relayed back to the user.
 
 ### Technologies Used
 
-* TypeScript
-* Node.js
-* MySQL Database
-* Wechaty Library
+* [**Wechaty Library**](https://wechaty.js.org/) was used for the basic WeChat bot functions.
+* **TypeScript**, hosted on a **Node.js** and **Express.js** server, was used to implement the Wechaty library as well as handling in-app messages, database operations, and making HTTP requests to the Flask endpoints with **Axios**.
+* **Python** was used in developing REST API endpoints in **Flask**, tokenization and lemmatization utilizing **Stanza** in English and **Jieba** in Chinese, and **SentenceTransformers** with pre-trained models for vectorization.
+* **MySQL** was used for database operations to store messages and responses.
 
 ### How to Use
 

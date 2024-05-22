@@ -5,5 +5,5 @@ package-lock.json
 bot.memory-card.json
 .env
 TODO.md
-tsconfig.json
 __pycache__
+.vscode

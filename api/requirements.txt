@@ -1,0 +1,5 @@
+flask
+sentence-transformers
+stanza
+jieba
+nltk
