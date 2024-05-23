@@ -4,6 +4,6 @@ node_modules/
 package-lock.json
 bot.memory-card.json
 .env
-TODO.md
 __pycache__
 .vscode
+TODO.md

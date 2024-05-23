@@ -7,6 +7,7 @@
 #### Automatic Similar Message Response
 
 * Uses pre-trained models to automatically respond to messages based on similar historical prompts.
+  * Sent messages and user response in chosen group chat is logged in a database such that the next time a similar message is sent, the bot will automatically respond for the user in the same manner.
 
 #### Manual Keyword Input
 
@@ -28,11 +29,12 @@
 ### How to Use
 
 1. [Clone repository](https://github.com/junhecui/chatbot).
-2. Set environment variables and connect to a SQL Database.
+2. Connect to an SQL Database and create a `.env` file with the following elements: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `ADMIN_NAME` (WeChat administrator account name), and `ADMIN_ROOM_TOPIC` (WeChat primary group chat).
 3. Run `npm install`.
    * If program does not function correctly, try individually installing `wechaty`, `wechaty-puppet-wechat4u`, `qrcode-terminal`, `mysql`, `mysql2`.
-4. Scan QR code with WeChat account user desires the bot to function on.
-5. The bot will be ready to function.
+4. Run `pip install flask sentence-transformers stanza jieba nltk`.
+5. Scan QR code with WeChat account user desires the bot to function on.
+6. The bot will be ready to function.
 
 ### Instructions for Adding Keywords / Responses
 

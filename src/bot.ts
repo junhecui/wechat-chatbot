@@ -55,12 +55,32 @@ async function onMessage(msg: Message) {
         if (dbConnection && messageText && topic === adminRoomTopic) {
             await logMessageToDatabase(messageText, senderName, topic, lang);
         }
-        await handleIncomingMessage(msg, messageText, senderName, lang);
+
+        const keywordResponse = await checkKeywords(messageText);
+        if (keywordResponse) {
+            await msg.say(keywordResponse);
+        } else {
+            await handleIncomingMessage(msg, messageText, senderName, lang);
+        }
     }
 
     if (messageText.startsWith(respondCommand)) {
         await handleRespondCommand(msg, messageText);
     }
+}
+
+async function checkKeywords(messageText: string): Promise<string | null> {
+    try {
+        const query = 'SELECT keywordResponse FROM keywords WHERE ? LIKE CONCAT("%", keyword, "%") LIMIT 1';
+        const [results] = await dbConnection!.query<mysql.RowDataPacket[]>(query, [messageText]);
+
+        if (results.length > 0) {
+            return results[0].keywordResponse;
+        }
+    } catch (error) {
+        handleError('DB', 'Error checking keywords in database', error);
+    }
+    return null;
 }
 
 async function logMessageToDatabase(messageText: string, senderName: string, topic: string, lang: string) {
