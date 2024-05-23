@@ -71,11 +71,18 @@ async function onMessage(msg: Message) {
 
 async function checkKeywords(messageText: string): Promise<string | null> {
     try {
-        const query = 'SELECT keywordResponse FROM keywords WHERE ? LIKE CONCAT("%", keyword, "%") LIMIT 1';
-        const [results] = await dbConnection!.query<mysql.RowDataPacket[]>(query, [messageText]);
+        const query = 'SELECT keyword, keywordResponse FROM keywords';
+        const [results] = await dbConnection!.query<mysql.RowDataPacket[]>(query);
 
-        if (results.length > 0) {
-            return results[0].keywordResponse;
+        for (const row of results) {
+            const keywords = row.keyword.split(',').map((k: string) => k.trim());
+            const allKeywordsPresent = keywords.every((keyword: string) => 
+                new RegExp(`\\b${keyword}\\b`, 'i').test(messageText)
+            );
+
+            if (allKeywordsPresent) {
+                return row.keywordResponse;
+            }
         }
     } catch (error) {
         handleError('DB', 'Error checking keywords in database', error);

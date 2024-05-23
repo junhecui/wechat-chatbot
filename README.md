@@ -13,6 +13,7 @@
 
 * Automatically respond to messages containing keywords.
   * Ability to add / remove responses within messaging service.
+  * Adding multiple keywords for one response will require all of the keywords being present in the message for the specific response to be sent.
 
 #### Question Relay Feature
 
