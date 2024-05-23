@@ -51,6 +51,10 @@ When the program is running:
 
 If you want to use administrator features, responding to messages remotely, you will need to set an `ADMIN_NAME` (WeChat display name) and `ADMIN_ROOM_TOPIC` (WeChat room topic) in environment variables. The administrator corresponding to `ADMIN_NAME` is the only one who can respond to questions remotely, and the questions will be sent to the room corresponding to `ADMIN_ROOM_TOPIC`.
 
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
+
 ### Contact Information
 
 For support, please contact `cjunhe05@gmail.com`.
@@ -105,6 +109,10 @@ For support, please contact `cjunhe05@gmail.com`.
 ### 管理员说明
 
 如果您想使用管理员功能（远程回复消息），您需要在环境变量中设置 `ADMIN_NAME`（微信显示名称）和 `ADMIN_ROOM_TOPIC`（微信群聊主题）。对应 `ADMIN_NAME` 的管理员是唯一可以远程回复问题的人，问题将被发送到对应 `ADMIN_ROOM_TOPIC` 的群聊中。
+
+## 许可证
+
+此项目依据 MIT 许可证授权 - 详情请参阅 [LICENSE](LICENSE.txt) 文件。
 
 ### 联系信息
 
