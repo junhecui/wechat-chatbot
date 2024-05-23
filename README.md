@@ -17,8 +17,8 @@
 
 #### Question Relay Feature
 
-* Automatically messages administrator when receiving a question (any message with a question mark).
-  * Administrator response will be relayed back to the user.
+* Automatically messages bot user when pinged by another user with associated message.
+  * User response will be relayed back to target group.
 
 ### Technologies Used
 

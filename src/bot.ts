@@ -45,6 +45,7 @@ async function onMessage(msg: Message) {
     const topic = room ? await room.topic() : 'No Room';
     const adminRoomTopic = process.env.ADMIN_ROOM_TOPIC || '';
     const respondCommand = '!respond ';
+    const userName = process.env.USER_NAME || '';
 
     const lang = /[\u4e00-\u9fa5]/.test(messageText) ? 'zh' : 'en';
 
@@ -59,13 +60,21 @@ async function onMessage(msg: Message) {
         const keywordResponse = await checkKeywords(messageText);
         if (keywordResponse) {
             await msg.say(keywordResponse);
+            return;  // Don't forward if keyword response is found
         } else {
-            await handleIncomingMessage(msg, messageText, senderName, lang);
+            const foundResponse = await handleIncomingMessage(msg, messageText, senderName, lang);
+            if (foundResponse) {
+                return;  // Don't forward if similarity response is found
+            }
         }
     }
 
     if (messageText.startsWith(respondCommand)) {
         await handleRespondCommand(msg, messageText);
+    }
+
+    if (messageText.includes(`@${userName}`)) {
+        await forwardMessageToAdminRoom(senderName, messageText);
     }
 }
 
@@ -149,20 +158,19 @@ function handleBotCommand(message: string) {
     }
 }
 
-async function handleIncomingMessage(msg: Message, messageText: string, senderName: string, lang: string) {
+async function handleIncomingMessage(msg: Message, messageText: string, senderName: string, lang: string): Promise<string | null> {
     console.log('Handling incoming message:', messageText);
     const foundResponse = await searchSimilarMessageResponse(messageText, lang);
 
     if (foundResponse) {
         console.log('Found response:', foundResponse);
         await msg.say(foundResponse);
+        return foundResponse;
     } else {
         console.log('No matching keyword found.');
     }
 
-    if (messageText.includes('?')) {
-        await forwardMessageToAdminRoom(senderName, messageText);
-    }
+    return null;
 }
 
 async function searchSimilarMessageResponse(messageText: string, lang: string): Promise<string | null> {
@@ -230,24 +238,25 @@ async function searchSimilarMessageResponse(messageText: string, lang: string): 
 }
 
 async function forwardMessageToAdminRoom(senderName: string, message: string) {
-    const adminRoomTopic = process.env.ADMIN_ROOM_TOPIC || '';
+    const adminRoomTopic = process.env.RESPONSE_ROOM_TOPIC || '';
     const forwardRecipient = await bot.Room.find({ topic: adminRoomTopic });
 
     if (forwardRecipient) {
-        await forwardRecipient.say(`${senderName} 提出了以下问题：${message}`);
+        await forwardRecipient.say(`${senderName}: ${message}`);
         log.info('forwarded', message, 'to', forwardRecipient.topic());
     }
 }
 
 async function handleRespondCommand(msg: Message, message: string) {
     const sender = msg.talker();
-    const adminName = process.env.ADMIN_NAME || '';
+    const adminName = process.env.USER_NAME || '';
     const admin = await bot.Contact.find({ name: adminName });
 
     if (admin && sender.name() === admin.name()) {
         const toReplyTo = await bot.Room.find({ topic: process.env.ADMIN_ROOM_TOPIC || '' });
         if (toReplyTo) {
-            await toReplyTo.say(`${toReplyTo.topic()}, ${message} - ${sender.name()}`);
+            message = message.substring(9)
+            await toReplyTo.say(`${message} - ${sender.name()}`);
         }
     }
 }
