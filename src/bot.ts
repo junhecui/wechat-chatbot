@@ -155,7 +155,7 @@ async function searchSimilarMessageResponse(messageText: string, lang: string): 
         }
 
         // Set maxSimilarity based on language
-        let maxSimilarity = lang === 'zh' ? 0.65 : 0.65;
+        let maxSimilarity = lang === 'zh' ? 0.625 : 0.65;
         let bestMatchResponse: string | null = null;
 
         for (const row of results) {

@@ -7,3 +7,4 @@ bot.memory-card.json
 TODO.md
 __pycache__
 .vscode
+.DS_Store
