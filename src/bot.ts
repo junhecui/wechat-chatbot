@@ -8,6 +8,8 @@ import { ResultSetHeader } from 'mysql2';
 
 let dbConnection: mysql.Connection | null = null;
 let lastMessageId: number | null = null;
+let originalMessageText: string | null = null;
+let originalMessageLang: string | null = null;
 
 async function initializeDatabase() {
     try {
@@ -43,9 +45,10 @@ async function onMessage(msg: Message) {
     const senderName = sender.name();
     const room = msg.room();
     const topic = room ? await room.topic() : 'No Room';
-    const adminRoomTopic = process.env.ROOM_TOPIC || '';
     const respondCommand = '!respond ';
     const userName = process.env.USER_NAME || '';
+    const roomTopic = process.env.ROOM_TOPIC || '';
+    const responseRoomTopic = process.env.RESPONSE_ROOM_TOPIC || '';
 
     const lang = /[\u4e00-\u9fa5]/.test(messageText) ? 'zh' : 'en';
 
@@ -59,25 +62,28 @@ async function onMessage(msg: Message) {
             await forwardMessageToAdminRoom(senderName, messageText);
         }
 
-        if (dbConnection && logMessage && topic === adminRoomTopic) {
+        if (topic === roomTopic) {
+            await forwardMessageToAdminRoom(senderName, messageText);
             await logMessageToDatabase(logMessage, senderName, topic, lang);
         }
 
         const keywordResponse = await checkKeywords(logMessage);
         if (keywordResponse) {
-            await msg.say(`${lang === 'zh' ? '响应：' : 'Responding to'} '${messageText}': ${keywordResponse}`);
+            const responseMessage = `${lang === 'zh' ? '响应：' : 'Responding to'} '${messageText}': ${keywordResponse}`;
+            await msg.say(responseMessage);
             return;
         } else {
             const foundResponse = await handleIncomingMessage(msg, logMessage, senderName, lang);
             if (foundResponse) {
-                await msg.say(`${lang === 'zh' ? '响应：' : 'Responding to'} '${messageText}': ${foundResponse}`);
+                const responseMessage = `${lang === 'zh' ? '响应：' : 'Responding to'} '${messageText}': ${foundResponse}`;
+                await msg.say(responseMessage);
                 return;
             }
         }
     }
 
-    if (messageText.startsWith(respondCommand)) {
-        await handleRespondCommand(msg, messageText);
+    if (messageText.startsWith(respondCommand) && topic === responseRoomTopic) {
+        await handleRespondCommand(msg, messageText, lang);
     }
 }
 
@@ -105,7 +111,8 @@ async function checkKeywords(messageText: string): Promise<string | null> {
 async function logMessageToDatabase(messageText: string, senderName: string, topic: string, lang: string) {
     try {
         console.log('Attempting to get embedding for:', messageText);
-        const response = await axios.post('http://localhost:4999/embedding', { text: messageText, lang });
+        const cleanedMessageText = messageText.startsWith('!respond ') ? messageText.replace('!respond ', '').trim() : messageText;
+        const response = await axios.post('http://localhost:4999/embedding', { text: cleanedMessageText, lang });
         const embedding = response.data.embedding;
 
         if (!Array.isArray(embedding) || (embedding.length !== 384 && embedding.length !== 768)) {
@@ -122,9 +129,11 @@ async function logMessageToDatabase(messageText: string, senderName: string, top
 
         const [results] = await dbConnection!.execute<ResultSetHeader>(
             'INSERT INTO messages (messageText, embedding, messageSender, roomTopic, response) VALUES (?, ?, ?, ?, ?)',
-            [messageText, buffer, senderName, topic, '']
+            [cleanedMessageText, buffer, senderName, topic, '']
         );
         lastMessageId = results.insertId;
+        originalMessageText = cleanedMessageText;
+        originalMessageLang = lang;
         console.log('Message logged to DB with ID:', lastMessageId);
     } catch (error) {
         handleError('DB', 'Error logging message to database', error);
@@ -138,9 +147,10 @@ async function updateMessageResponse(responseText: string) {
     }
 
     try {
+        const cleanedResponseText = responseText.replace('!respond ', '').trim();
         const [results] = await dbConnection!.execute<ResultSetHeader>(
             'UPDATE messages SET response = ? WHERE id = ?',
-            [responseText, lastMessageId]
+            [cleanedResponseText, lastMessageId]
         );
         console.log('Updated message response in DB with ID:', lastMessageId);
         lastMessageId = null;
@@ -248,16 +258,18 @@ async function forwardMessageToAdminRoom(senderName: string, message: string) {
     }
 }
 
-async function handleRespondCommand(msg: Message, message: string) {
+async function handleRespondCommand(msg: Message, message: string, lang: string) {
     const sender = msg.talker();
     const adminName = process.env.USER_NAME || '';
     const admin = await bot.Contact.find({ name: adminName });
 
     if (admin && sender.name() === admin.name()) {
         const toReplyTo = await bot.Room.find({ topic: process.env.ROOM_TOPIC || '' });
-        if (toReplyTo) {
-            message = message.substring(9);
-            await toReplyTo.say(`${message}`);
+        if (toReplyTo && originalMessageText) {
+            const responseText = message.replace('!respond ', '').trim();
+            const responseMessage = `${lang === 'zh' ? '响应：' : 'Responding to'} '${originalMessageText}': ${responseText}`;
+            await toReplyTo.say(responseMessage);
+            await updateMessageResponse(responseText);
         }
     }
 }
