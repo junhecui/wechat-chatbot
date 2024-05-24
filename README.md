@@ -1,4 +1,4 @@
-# WeChat Helper Bot
+# WeChat Assistant Chatbot
 
 ## English
 
