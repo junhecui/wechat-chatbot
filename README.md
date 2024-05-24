@@ -6,7 +6,7 @@
 
 #### Automatic Similar Message Response
 
-* Uses pre-trained models to automatically respond to messages based on similar historical prompts.
+* Uses pre-trained models to automatically respond to messages in English and Chinese based on similar historical prompts.
   * Sent messages and user response in chosen group chat is logged in a database such that the next time a similar message is sent, the bot will automatically respond for the user in the same manner.
 
 #### Manual Keyword Input
@@ -30,7 +30,7 @@
 ### How to Use
 
 1. [Clone repository](https://github.com/junhecui/chatbot).
-2. Connect to an SQL Database and create a `.env` file with the following elements: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `ADMIN_NAME` (WeChat administrator account name), and `ADMIN_ROOM_TOPIC` (WeChat primary group chat).
+2. Connect to an SQL Database and create a `.env` file with the following elements: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `USER_NAME` (Bot user account name), `ADMIN_ROOM_TOPIC` (Room for bot to monitor), and `RESPONSE_ROOM_TOPIC` (Room for responding with the message relay feature).
 3. Run `npm install`.
    * If program does not function correctly, try individually installing `wechaty`, `wechaty-puppet-wechat4u`, `qrcode-terminal`, `mysql`, `mysql2`.
 4. Run `pip install flask sentence-transformers stanza jieba nltk`.
@@ -47,10 +47,6 @@ When the program is running:
 * `!remove <index>` will remove the keyword - response pairing at that index.
 * `!remove <index> <keyword>` will remove the specific keyword at that index.
 
-### Instructions for Administrator
-
-If you want to use administrator features, responding to messages remotely, you will need to set an `ADMIN_NAME` (WeChat display name) and `ADMIN_ROOM_TOPIC` (WeChat room topic) in environment variables. The administrator corresponding to `ADMIN_NAME` is the only one who can respond to questions remotely, and the questions will be sent to the room corresponding to `ADMIN_ROOM_TOPIC`.
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
@@ -59,60 +55,56 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) 
 
 For support, please contact `cjunhe05@gmail.com`.
 
-## 简体中文
+## 中文
 
 ### 功能
 
 #### 自动相似消息响应
 
-* 使用预训练模型根据历史相似提示自动回复消息。
-  * 在数据库中记录发送的消息和用户在选定群聊中的回复，以便下次发送相似消息时，机器人会以相同的方式自动回复用户。
+* 使用预训练模型根据相似的历史提示自动响应英文和中文消息。
+  * 发送的消息和用户在选定群聊中的响应将记录在数据库中，下次发送相似消息时，机器人将以相同方式自动响应用户。
 
-#### 手动关键字输入
+#### 手动关键词输入
 
-* 自动回复包含关键字的消息。
-  * 能够在消息服务中添加/删除回复。
-  * 为一个回复添加多个关键字需要消息中同时包含所有关键字，才能发送特定回复。
+* 自动响应包含关键词的消息。
+  * 能够在消息服务中添加/删除响应。
+  * 为一个响应添加多个关键词将需要消息中同时存在所有关键词才能发送特定响应。
 
-#### 问题转发功能
+#### 消息中继功能
 
-* 收到问题时（任何带问号的消息）自动向管理员发送消息。
-  * 管理员的回复将被转发给用户。
+* 当另一个用户使用相关消息 ping 机器人用户时，自动向机器人用户发送消息。
+  * 用户响应将被中继回目标群组。
 
-### 使用技术
+### 使用的技术
 
-* 使用 [**Wechaty 库**](https://wechaty.js.org/) 实现基本的微信机器人功能。
-* 使用 **TypeScript** 并托管在 **Node.js** 和 **Express.js** 服务器上，实现 Wechaty 库，以及处理应用内消息、数据库操作，并通过 **Axios** 向 Flask 端点发送 HTTP 请求。
-* 使用 **Python** 开发 **Flask** 的 REST API 端点，使用 **Stanza** 进行英文分词和词形还原，使用 **Jieba** 进行中文分词，使用 **SentenceTransformers** 及预训练模型进行向量化。
-* 使用 **MySQL** 进行数据库操作以存储消息和回复。
+* [**Wechaty 库**](https://wechaty.js.org/) 用于实现基本的微信机器人功能。
+* **TypeScript**，托管在 **Node.js** 和 **Express.js** 服务器上，用于实现 Wechaty 库以及处理应用内消息、数据库操作和使用 **Axios** 向 Flask 端点发出 HTTP 请求。
+* **Python** 用于开发 **Flask** 中的 REST API 端点，使用 **Stanza** 进行英文的词干化和词形还原，使用 **Jieba** 进行中文的分词，使用预训练模型的 **SentenceTransformers** 进行向量化。
+* **MySQL** 用于数据库操作，存储消息和响应。
 
 ### 使用方法
 
 1. [克隆仓库](https://github.com/junhecui/chatbot)。
-2. 连接到 SQL 数据库并创建 `.env` 文件，包含以下元素：`DB_HOST`，`DB_USER`，`DB_PASSWORD`，`DB_NAME`，`ADMIN_NAME`（微信管理员账号名称），和 `ADMIN_ROOM_TOPIC`（微信主要群聊）。
+2. 连接到 SQL 数据库并创建一个包含以下元素的 `.env` 文件：`DB_HOST`、`DB_USER`、`DB_PASSWORD`、`DB_NAME`、`USER_NAME`（机器人用户账号名称）、`ADMIN_ROOM_TOPIC`（机器人监控的房间）和 `RESPONSE_ROOM_TOPIC`（消息中继功能响应的房间）。
 3. 运行 `npm install`。
-   * 如果程序运行不正常，尝试分别安装 `wechaty`, `wechaty-puppet-wechat4u`, `qrcode-terminal`, `mysql`, `mysql2`。
+   * 如果程序无法正常运行，尝试分别安装 `wechaty`、`wechaty-puppet-wechat4u`、`qrcode-terminal`、`mysql`、`mysql2`。
 4. 运行 `pip install flask sentence-transformers stanza jieba nltk`。
-5. 使用希望机器人运行的微信账号扫描二维码。
+5. 使用用户希望机器人运行的微信账号扫描二维码。
 6. 机器人将准备就绪。
 
-### 添加关键字/回复的说明
+### 添加关键词/响应的操作说明
 
 程序运行时：
 
-* `!add <关键字> <回复>` 将添加一个关键字和一个回复消息到数据库。
-* `!editKeyword <索引> <关键字>` 将在特定索引处添加新的关键字并配对相应的回复消息。
-* `!editResponse <索引> <回复>` 将更改特定索引处的回复消息。
-* `!remove <索引>` 将移除特定索引处的关键字-回复对。
-* `!remove <索引> <关键字>` 将移除特定索引处的特定关键字。
-
-### 管理员说明
-
-如果您想使用管理员功能（远程回复消息），您需要在环境变量中设置 `ADMIN_NAME`（微信显示名称）和 `ADMIN_ROOM_TOPIC`（微信群聊主题）。对应 `ADMIN_NAME` 的管理员是唯一可以远程回复问题的人，问题将被发送到对应 `ADMIN_ROOM_TOPIC` 的群聊中。
+* `!add <关键词> <响应>` 将添加一个关键词及其对应的响应消息到数据库。
+* `!editKeyword <索引> <关键词>` 将添加新的关键词到指定索引的响应消息中。
+* `!editResponse <索引> <响应>` 将更改指定索引的响应消息。
+* `!remove <索引>` 将删除指定索引的关键词-响应配对。
+* `!remove <索引> <关键词>` 将删除指定索引的特定关键词。
 
 ## 许可证
 
-此项目依据 MIT 许可证授权 - 详情请参阅 [LICENSE](LICENSE.txt) 文件。
+此项目根据 MIT 许可证授权 - 详细信息请参见 [LICENSE](LICENSE.txt) 文件。
 
 ### 联系信息
 
