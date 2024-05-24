@@ -15,7 +15,7 @@
   * Ability to add / remove responses within messaging service.
   * Adding multiple keywords for one response will require all the keywords being present in the message for the specific response to be sent.
 
-#### Question Relay Feature
+#### Message Relay Feature
 
 * Automatically messages bot user when pinged by another user with associated message.
   * User response will be relayed back to target group.

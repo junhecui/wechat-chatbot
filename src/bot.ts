@@ -45,7 +45,6 @@ async function onMessage(msg: Message) {
     const senderName = sender.name();
     const room = msg.room();
     const topic = room ? await room.topic() : 'No Room';
-    const adminRoomTopic = process.env.ADMIN_ROOM_TOPIC || '';
     const respondCommand = '!respond ';
     const userName = process.env.USER_NAME || '';
     const roomTopic = process.env.ROOM_TOPIC || '';
@@ -63,20 +62,21 @@ async function onMessage(msg: Message) {
             await forwardMessageToAdminRoom(senderName, messageText);
         }
 
-        if (topic === roomTopic) {
-            await forwardMessageToAdminRoom(senderName, messageText);
-            await logMessageToDatabase(logMessage, senderName, topic, lang);
-        }
-
         const keywordResponse = await checkKeywords(logMessage);
         if (keywordResponse) {
             await msg.say(keywordResponse);
-            return;  // Don't forward if keyword response is found
+            return;  // Don't log if keyword response is found
         } else {
             const foundResponse = await handleIncomingMessage(msg, logMessage, senderName, lang);
             if (foundResponse) {
-                return;  // Don't forward if similarity response is found
+                await msg.say(foundResponse);
+                return;  // Don't log if similarity response is found
             }
+        }
+
+        if (topic === roomTopic) {
+            await forwardMessageToAdminRoom(senderName, messageText);
+            await logMessageToDatabase(logMessage, senderName, topic, lang);
         }
     }
 
@@ -92,7 +92,7 @@ async function checkKeywords(messageText: string): Promise<string | null> {
 
         for (const row of results) {
             const keywords = row.keyword.split(',').map((k: string) => k.trim());
-            const allKeywordsPresent = keywords.every((keyword: string) => 
+            const allKeywordsPresent = keywords.every((keyword: string) =>
                 new RegExp(`\\b${keyword}\\b`, 'i').test(messageText)
             );
 
@@ -175,7 +175,6 @@ async function handleIncomingMessage(msg: Message, messageText: string, senderNa
 
     if (foundResponse) {
         console.log('Found response:', foundResponse);
-        await msg.say(foundResponse);
         return foundResponse;
     } else {
         console.log('No matching keyword found.');
@@ -265,10 +264,12 @@ async function handleRespondCommand(msg: Message, message: string, lang: string)
     const admin = await bot.Contact.find({ name: adminName });
 
     if (admin && sender.name() === admin.name()) {
-        const toReplyTo = await bot.Room.find({ topic: process.env.ADMIN_ROOM_TOPIC || '' });
+        const toReplyTo = await bot.Room.find({ topic: process.env.ROOM_TOPIC || '' });
         if (toReplyTo) {
-            message = message.substring(9)
-            await toReplyTo.say(`${message} - ${sender.name()}`);
+            const responseText = message.replace('!respond ', '').trim();
+            const responseMessage = `${originalMessageLang === 'zh' ? '响应：' : 'Responding to'} '${originalMessageText}': ${responseText}`;
+            await toReplyTo.say(responseMessage);
+            await updateMessageResponse(responseText);
         }
     }
 }
@@ -390,7 +391,6 @@ function handleError(context: string, message: string, error: unknown) {
         if (error.stack) {
             console.error('Stack trace:', error.stack);
         }
-        // Specific logging for Axios errors
         if (axios.isAxiosError(error)) {
             console.error('Axios error details:', {
                 url: error.config?.url,
