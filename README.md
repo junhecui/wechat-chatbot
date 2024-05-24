@@ -30,7 +30,7 @@
 ### How to Use
 
 1. [Clone repository](https://github.com/junhecui/chatbot).
-2. Connect to an SQL Database and create a `.env` file with the following elements: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `ADMIN_NAME` (WeChat administrator account name), and `ADMIN_ROOM_TOPIC` (WeChat primary group chat).
+2. Connect to an SQL Database and create a `.env` file with the following elements: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `USER_NAME` (Name of account the bot is running on), `ROOM_TOPIC` (Room the bot will monitor), and `RESPONSE_ROOM_TOPIC` (Room the forwarded message will be sent).
 3. Run `npm install`.
    * If program does not function correctly, try individually installing `wechaty`, `wechaty-puppet-wechat4u`, `qrcode-terminal`, `mysql`, `mysql2`.
 4. Run `pip install flask sentence-transformers stanza jieba nltk`.
@@ -46,10 +46,6 @@ When the program is running:
 * `!editResponse <index> <response>` will change the response message at that specific index.
 * `!remove <index>` will remove the keyword - response pairing at that index.
 * `!remove <index> <keyword>` will remove the specific keyword at that index.
-
-### Instructions for Administrator
-
-If you want to use administrator features, responding to messages remotely, you will need to set an `ADMIN_NAME` (WeChat display name) and `ADMIN_ROOM_TOPIC` (WeChat room topic) in environment variables. The administrator corresponding to `ADMIN_NAME` is the only one who can respond to questions remotely, and the questions will be sent to the room corresponding to `ADMIN_ROOM_TOPIC`.
 
 ## License
 

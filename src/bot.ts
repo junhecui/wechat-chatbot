@@ -43,7 +43,7 @@ async function onMessage(msg: Message) {
     const senderName = sender.name();
     const room = msg.room();
     const topic = room ? await room.topic() : 'No Room';
-    const adminRoomTopic = process.env.ADMIN_ROOM_TOPIC || '';
+    const adminRoomTopic = process.env.ROOM_TOPIC || '';
     const respondCommand = '!respond ';
     const userName = process.env.USER_NAME || '';
 
@@ -60,11 +60,11 @@ async function onMessage(msg: Message) {
         const keywordResponse = await checkKeywords(messageText);
         if (keywordResponse) {
             await msg.say(keywordResponse);
-            return;  // Don't forward if keyword response is found
+            return;  
         } else {
             const foundResponse = await handleIncomingMessage(msg, messageText, senderName, lang);
             if (foundResponse) {
-                return;  // Don't forward if similarity response is found
+                return;  
             }
         }
     }
@@ -140,7 +140,7 @@ async function updateMessageResponse(responseText: string) {
             [responseText, lastMessageId]
         );
         console.log('Updated message response in DB with ID:', lastMessageId);
-        lastMessageId = null;  // Reset lastMessageId after updating
+        lastMessageId = null; 
     } catch (error) {
         handleError('DB', 'Error updating message response in database', error);
     }
@@ -189,14 +189,12 @@ async function searchSimilarMessageResponse(messageText: string, lang: string): 
             return null;
         }
 
-        // Set maxSimilarity based on language
         let maxSimilarity = lang === 'zh' ? 0.625 : 0.65;
         let bestMatchResponse: string | null = null;
 
         for (const row of results) {
             const { id, messageText: storedMessageText, embedding, response } = row;
 
-            // Skip the current message and entries with empty responses
             if (id === lastMessageId || !response) continue;
 
             const storedBuffer = Buffer.from(embedding);
@@ -205,7 +203,6 @@ async function searchSimilarMessageResponse(messageText: string, lang: string): 
                 storedEmbedding[i] = storedBuffer.readFloatBE(i * 4);
             }
 
-            // Skip embeddings with non-matching dimensions
             if (storedEmbedding.length !== inputEmbedding.length) continue;
 
             console.log('Stored message text:', storedMessageText);
@@ -253,7 +250,7 @@ async function handleRespondCommand(msg: Message, message: string) {
     const admin = await bot.Contact.find({ name: adminName });
 
     if (admin && sender.name() === admin.name()) {
-        const toReplyTo = await bot.Room.find({ topic: process.env.ADMIN_ROOM_TOPIC || '' });
+        const toReplyTo = await bot.Room.find({ topic: process.env.ROOM_TOPIC || '' });
         if (toReplyTo) {
             message = message.substring(9)
             await toReplyTo.say(`${message} - ${sender.name()}`);
