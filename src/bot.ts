@@ -53,28 +53,31 @@ async function onMessage(msg: Message) {
         handleBotCommand(messageText);
         await updateMessageResponse(messageText);
     } else {
-        if (dbConnection && messageText && topic === adminRoomTopic) {
-            await logMessageToDatabase(messageText, senderName, topic, lang);
+        let logMessage = messageText;
+        if (messageText.includes(`@${userName}`)) {
+            logMessage = messageText.replace(`@${userName}`, '').trim();
+            await forwardMessageToAdminRoom(senderName, messageText);
         }
 
-        const keywordResponse = await checkKeywords(messageText);
+        if (dbConnection && logMessage && topic === adminRoomTopic) {
+            await logMessageToDatabase(logMessage, senderName, topic, lang);
+        }
+
+        const keywordResponse = await checkKeywords(logMessage);
         if (keywordResponse) {
-            await msg.say(keywordResponse);
-            return;  
+            await msg.say(`${lang === 'zh' ? '响应：' : 'Responding to'} '${messageText}': ${keywordResponse}`);
+            return;
         } else {
-            const foundResponse = await handleIncomingMessage(msg, messageText, senderName, lang);
+            const foundResponse = await handleIncomingMessage(msg, logMessage, senderName, lang);
             if (foundResponse) {
-                return;  
+                await msg.say(`${lang === 'zh' ? '响应：' : 'Responding to'} '${messageText}': ${foundResponse}`);
+                return;
             }
         }
     }
 
     if (messageText.startsWith(respondCommand)) {
         await handleRespondCommand(msg, messageText);
-    }
-
-    if (messageText.includes(`@${userName}`)) {
-        await forwardMessageToAdminRoom(senderName, messageText);
     }
 }
 
@@ -140,7 +143,7 @@ async function updateMessageResponse(responseText: string) {
             [responseText, lastMessageId]
         );
         console.log('Updated message response in DB with ID:', lastMessageId);
-        lastMessageId = null; 
+        lastMessageId = null;
     } catch (error) {
         handleError('DB', 'Error updating message response in database', error);
     }
@@ -176,7 +179,8 @@ async function handleIncomingMessage(msg: Message, messageText: string, senderNa
 async function searchSimilarMessageResponse(messageText: string, lang: string): Promise<string | null> {
     try {
         console.log('Generating embedding for:', messageText);
-        const response = await axios.post('http://localhost:4999/embedding', { text: messageText, lang });
+        const cleanedMessageText = messageText.replace(`@${process.env.USER_NAME}`, '').trim();
+        const response = await axios.post('http://localhost:4999/embedding', { text: cleanedMessageText, lang });
         const inputEmbedding = response.data.embedding;
 
         console.log('Input embedding dimension:', inputEmbedding.length);
@@ -252,8 +256,8 @@ async function handleRespondCommand(msg: Message, message: string) {
     if (admin && sender.name() === admin.name()) {
         const toReplyTo = await bot.Room.find({ topic: process.env.ROOM_TOPIC || '' });
         if (toReplyTo) {
-            message = message.substring(9)
-            await toReplyTo.say(`${message} - ${sender.name()}`);
+            message = message.substring(9);
+            await toReplyTo.say(`${message}`);
         }
     }
 }
