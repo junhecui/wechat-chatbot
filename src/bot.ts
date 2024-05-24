@@ -45,6 +45,7 @@ async function onMessage(msg: Message) {
     const senderName = sender.name();
     const room = msg.room();
     const topic = room ? await room.topic() : 'No Room';
+    const adminRoomTopic = process.env.ADMIN_ROOM_TOPIC || '';
     const respondCommand = '!respond ';
     const userName = process.env.USER_NAME || '';
     const roomTopic = process.env.ROOM_TOPIC || '';
@@ -69,15 +70,12 @@ async function onMessage(msg: Message) {
 
         const keywordResponse = await checkKeywords(logMessage);
         if (keywordResponse) {
-            const responseMessage = `${lang === 'zh' ? '响应：' : 'Responding to'} '${messageText}': ${keywordResponse}`;
-            await msg.say(responseMessage);
-            return;
+            await msg.say(keywordResponse);
+            return;  // Don't forward if keyword response is found
         } else {
             const foundResponse = await handleIncomingMessage(msg, logMessage, senderName, lang);
             if (foundResponse) {
-                const responseMessage = `${lang === 'zh' ? '响应：' : 'Responding to'} '${messageText}': ${foundResponse}`;
-                await msg.say(responseMessage);
-                return;
+                return;  // Don't forward if similarity response is found
             }
         }
     }
@@ -153,7 +151,7 @@ async function updateMessageResponse(responseText: string) {
             [cleanedResponseText, lastMessageId]
         );
         console.log('Updated message response in DB with ID:', lastMessageId);
-        lastMessageId = null;
+        lastMessageId = null;  // Reset lastMessageId after updating
     } catch (error) {
         handleError('DB', 'Error updating message response in database', error);
     }
@@ -203,12 +201,14 @@ async function searchSimilarMessageResponse(messageText: string, lang: string): 
             return null;
         }
 
+        // Set maxSimilarity based on language
         let maxSimilarity = lang === 'zh' ? 0.625 : 0.65;
         let bestMatchResponse: string | null = null;
 
         for (const row of results) {
             const { id, messageText: storedMessageText, embedding, response } = row;
 
+            // Skip the current message and entries with empty responses
             if (id === lastMessageId || !response) continue;
 
             const storedBuffer = Buffer.from(embedding);
@@ -217,6 +217,7 @@ async function searchSimilarMessageResponse(messageText: string, lang: string): 
                 storedEmbedding[i] = storedBuffer.readFloatBE(i * 4);
             }
 
+            // Skip embeddings with non-matching dimensions
             if (storedEmbedding.length !== inputEmbedding.length) continue;
 
             console.log('Stored message text:', storedMessageText);
@@ -264,12 +265,10 @@ async function handleRespondCommand(msg: Message, message: string, lang: string)
     const admin = await bot.Contact.find({ name: adminName });
 
     if (admin && sender.name() === admin.name()) {
-        const toReplyTo = await bot.Room.find({ topic: process.env.ROOM_TOPIC || '' });
-        if (toReplyTo && originalMessageText) {
-            const responseText = message.replace('!respond ', '').trim();
-            const responseMessage = `${lang === 'zh' ? '响应：' : 'Responding to'} '${originalMessageText}': ${responseText}`;
-            await toReplyTo.say(responseMessage);
-            await updateMessageResponse(responseText);
+        const toReplyTo = await bot.Room.find({ topic: process.env.ADMIN_ROOM_TOPIC || '' });
+        if (toReplyTo) {
+            message = message.substring(9)
+            await toReplyTo.say(`${message} - ${sender.name()}`);
         }
     }
 }
