@@ -1,6 +1,6 @@
 # WeChat Assistant Chatbot
 
-This WeChat assistant chatbot uses keyword recognition and text similarity to automate responses to messages, reducing the need for human intervention.  
+This WeChat assistant chatbot uses keyword recognition and text similarity to automate responses to messages, reducing the need for human intervention. It was developed with corporate settings in mind, for efficiently handling customer inquiries, providing quick responses to common questions, and improving overall communication workflows. The automation this bot provides can save time and enhance productivity by automating routing activities.
 
 Developed by Jun He Cui at his internship at 麦斯信通科技(大连)有限公司.
 
