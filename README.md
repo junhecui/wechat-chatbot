@@ -34,8 +34,9 @@
 3. Run `npm install`.
    * If program does not function correctly, try individually installing `wechaty`, `wechaty-puppet-wechat4u`, `qrcode-terminal`, `mysql`, `mysql2`.
 4. Run `pip install flask sentence-transformers stanza jieba nltk`.
-5. Scan QR code with WeChat account user desires the bot to function on.
-6. The bot will be ready to function.
+5. Run `npm start` and `python3.11 api/api.py`
+6. Scan QR code with WeChat account user desires the bot to function on.
+7. The bot will be ready to function.
 
 ### Database Instructions
 
@@ -112,8 +113,9 @@ For support, please contact `cjunhe05@gmail.com`.
 3. 运行`npm install`。
    * 如果程序运行不正确，请尝试单独安装`wechaty`，`wechaty-puppet-wechat4u`，`qrcode-terminal`，`mysql`，`mysql2`。
 4. 运行`pip install flask sentence-transformers stanza jieba nltk`。
-5. 使用微信账号扫描二维码。
-6. 机器人将准备就绪。
+5. 运行`npm start`和`python3.11 api/api.py`。
+6. 使用微信账号扫描二维码。
+7. 机器人将准备就绪。
 
 ### 数据库说明
 
