@@ -11,7 +11,6 @@ let lastMessageId: number | null = null;
 let originalMessageText: string | null = null;
 let originalMessageLang: string | null = null;
 
-// Initialize database connection
 async function initializeDatabase() {
     try {
         dbConnection = await connectToDatabase();
@@ -33,12 +32,10 @@ function onScan(qrcode: string, status: ScanStatus) {
     }
 }
 
-// Handle login event
 function onLogin(user: Contact) {
     log.info('Bot', 'Logged into %s', user.name());
 }
 
-// Handle logout event
 function onLogout(user: Contact) {
     log.info('Bot', 'Logged out of %s', user.name());
 }
@@ -103,7 +100,6 @@ function handleBotCommand(message: string) {
     }
 }
 
-// Add a new keyword to the database
 async function addKeyword(message: string) {
     const parts = message.split(' ');
     const keyword = parts[1];
@@ -123,7 +119,7 @@ async function addKeyword(message: string) {
     }
 }
 
-// Edit an existing keyword in the database
+// Add a keyword to the keyword : response pairing
 async function editKeyword(message: string) {
     const parts = message.split(' ');
     const id = parts[1];
@@ -154,7 +150,6 @@ async function editKeyword(message: string) {
     }
 }
 
-// Edit the response of an existing keyword in the database
 async function editKeywordResponse(message: string) {
     const parts = message.split(' ');
     const id = parts[1];
@@ -174,7 +169,7 @@ async function editKeywordResponse(message: string) {
     }
 }
 
-// Remove a keyword from the database
+// Removing responses as well as removing keywords from the keyword : response pairing
 async function removeKeyword(message: string) {
     const parts = message.split(' ');
     const id = parts[1];
@@ -210,7 +205,7 @@ async function removeKeyword(message: string) {
     }
 }
 
-// Update the message response in the database
+// Update the message response in the database - used for similarity
 async function updateMessageResponse(responseText: string) {
     if (lastMessageId === null) {
         console.error('No message to update with response');
@@ -224,13 +219,12 @@ async function updateMessageResponse(responseText: string) {
             [cleanedResponseText, lastMessageId]
         );
         console.log('Updated message response in DB with ID:', lastMessageId);
-        lastMessageId = null;  // Reset lastMessageId after updating
+        lastMessageId = null; 
     } catch (error) {
         handleError('DB', 'Error updating message response in database', error);
     }
 }
 
-// Forward message to the admin room
 async function forwardMessageToAdminRoom(senderName: string, message: string) {
     const adminRoomTopic = process.env.RESPONSE_ROOM_TOPIC || '';
     const forwardRecipient = await bot.Room.find({ topic: adminRoomTopic });
@@ -329,7 +323,7 @@ async function searchSimilarMessageResponse(messageText: string, lang: string): 
             return null;
         }
 
-        // Set maxSimilarity based on language
+        // Set maxSimilarity based on language - can modify but I found this works best
         let maxSimilarity = lang === 'zh' ? 0.625 : 0.65;
         let bestMatchResponse: string | null = null;
 
@@ -431,7 +425,6 @@ type AggregateError = {
     errors: any[];
 };
 
-// Check if an error is an aggregate error
 function isAggregateError(error: unknown): error is AggregateError {
     return typeof error === 'object' && error !== null && 'errors' in error && Array.isArray((error as any).errors);
 }
