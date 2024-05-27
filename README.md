@@ -16,10 +16,11 @@ Developed by Jun He Cui at his internship at 麦斯信通科技(大连)有限公
 * Automatically respond to messages containing keywords.
   * Ability to add / remove responses within messaging service.
   * Adding multiple keywords for one response will require all the keywords being present in the message for the specific response to be sent.
+  * Note: Manual keyword input will *override* automatic similar message response; if a message contains all the keywords for a keyword : response pairing, the associated response will be sent.
 
 ### Message Relay Feature
 
-* Automatically messages bot user when pinged by another user with associated message.
+* Automatically messages bot user in response room when message is not automatically responded to through similar message response or keyword : response pairing.
   * User response will be relayed back to target group.
 
 ## Technologies Used
@@ -70,7 +71,7 @@ When the program is running:
 * `!add <keyword> <response>` will add a keyword paired with a response message to the database.
 * `!editKeyword <index> <keyword>` will add new keywords paired with the response message at that specific index.
 * `!editResponse <index> <response>` will change the response message at that specific index.
-* `!remove <index>` will remove the keyword - response pairing at that index.
+* `!remove <index>` will remove the keyword : response pairing at that index.
 * `!remove <index> <keyword>` will remove the specific keyword at that index.
 
 ## License
