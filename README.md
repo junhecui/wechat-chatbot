@@ -29,7 +29,7 @@
 
 ### How to Use
 
-1. [Clone repository](https://github.com/junhecui/chatbot).
+1. [Clone repository](https://github.com/junhecui/wechat-chatbot).
 2. Connect to an SQL Database and create a `.env` file with the following elements: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `USER_NAME` (Bot user account name), `ADMIN_ROOM_TOPIC` (Room for bot to monitor), and `RESPONSE_ROOM_TOPIC` (Room for responding with the message relay feature).
 3. Run `npm install`.
    * If program does not function correctly, try individually installing `wechaty`, `wechaty-puppet-wechat4u`, `qrcode-terminal`, `mysql`, `mysql2`.
@@ -108,7 +108,7 @@ For support, please contact `cjunhe05@gmail.com`.
 
 ### 如何使用
 
-1. [克隆仓库](https://github.com/junhecui/chatbot)。
+1. [克隆仓库](https://github.com/junhecui/wechat-chatbot)。
 2. 连接到SQL数据库并创建一个包含以下元素的`.env`文件：`DB_HOST`，`DB_USER`，`DB_PASSWORD`，`DB_NAME`，`USER_NAME`（机器人用户账号名称），`ADMIN_ROOM_TOPIC`（机器人监控的房间），和`RESPONSE_ROOM_TOPIC`（消息中继功能的响应房间）。
 3. 运行`npm install`。
    * 如果程序运行不正确，请尝试单独安装`wechaty`，`wechaty-puppet-wechat4u`，`qrcode-terminal`，`mysql`，`mysql2`。
