@@ -1,33 +1,35 @@
 # WeChat Assistant Chatbot
 
-## English
+This WeChat assistant chatbot uses keyword recognition and text similarity to automate responses to messages, reducing the need for human intervention.  
 
-### Features
+Developed by Jun He Cui at his internship at 麦斯信通科技(大连)有限公司.
 
-#### Automatic Similar Message Response
+## Features
+
+### Automatic Similar Message Response
 
 * Uses pre-trained models to automatically respond to messages in English and Chinese based on similar historical prompts.
   * Sent messages and user response in chosen group chat is logged in a database such that the next time a similar message is sent, the bot will automatically respond for the user in the same manner.
 
-#### Manual Keyword Input
+### Manual Keyword Input
 
 * Automatically respond to messages containing keywords.
   * Ability to add / remove responses within messaging service.
   * Adding multiple keywords for one response will require all the keywords being present in the message for the specific response to be sent.
 
-#### Message Relay Feature
+### Message Relay Feature
 
 * Automatically messages bot user when pinged by another user with associated message.
   * User response will be relayed back to target group.
 
-### Technologies Used
+## Technologies Used
 
 * [**Wechaty Library**](https://wechaty.js.org/) was used for the basic WeChat bot functions.
 * **TypeScript**, hosted on a **Node.js** and **Express.js** server, was used to implement the Wechaty library as well as handling in-app messages, database operations, and making HTTP requests to the Flask endpoints with **Axios**.
 * **Python** was used in developing REST API endpoints in **Flask**, tokenization and lemmatization utilizing **Stanza** in English and **Jieba** in Chinese, and **SentenceTransformers** with pre-trained models for vectorization.
 * **MySQL** was used for database operations to store messages and responses.
 
-### How to Use
+## How to Use
 
 1. [Clone repository](https://github.com/junhecui/wechat-chatbot).
 2. Connect to an SQL Database and create a `.env` file with the following elements: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `USER_NAME` (Bot user account name), `ADMIN_ROOM_TOPIC` (Room for bot to monitor), and `RESPONSE_ROOM_TOPIC` (Room for responding with the message relay feature).
@@ -38,11 +40,11 @@
 6. Scan QR code with WeChat account user desires the bot to function on.
 7. The bot will be ready to function.
 
-### Database Instructions
+## Database Instructions
 
 To ensure all features are functional, please connect to a SQL database with the following tables:
 
-## Messages Table
+### Messages Table
 
 | Column         | Data Type   | Attributes                  |
 |----------------|-------------|-----------------------------|
@@ -53,7 +55,7 @@ To ensure all features are functional, please connect to a SQL database with the
 | `roomTOPIC`    | VARCHAR     | NOT NULL                    |
 | `response`     | TEXT        |                             |
 
-## Keywords Table
+### Keywords Table
 
 | Column           | Data Type   | Attributes                  |
 |------------------|-------------|-----------------------------|
@@ -61,7 +63,7 @@ To ensure all features are functional, please connect to a SQL database with the
 | `keyword`        | VARCHAR     | NOT NULL                    |
 | `keywordResponse`| VARCHAR     | NOT NULL                    |
 
-### Instructions for Adding Keywords / Responses
+## Instructions for Adding Keywords / Responses
 
 When the program is running:
 
@@ -75,6 +77,6 @@ When the program is running:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
 
-### Contact Information
+## Contact Information
 
 For support, please contact `cjunhe05@gmail.com`.
