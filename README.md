@@ -135,20 +135,20 @@ For support, please contact `cjunhe05@gmail.com`.
 
 | 列名             | 数据类型   | 属性                          |
 |------------------|-------------|-----------------------------|
-| `id`             | INT         | 自动递增，非空                |
-| `messageText`    | TEXT        | 非空                         |
-| `embedding`      | BLOB        | 非空                         |
-| `messageSender`  | VARCHAR     | 非空                         |
-| `roomTOPIC`      | VARCHAR     | 非空                         |
+| `id`             | INT         | AUTO INCREMENT, NOT NULL    |
+| `messageText`    | TEXT        | NOT NULL                    |
+| `embedding`      | BLOB        | NOT NULL                    |
+| `messageSender`  | VARCHAR     | NOT NULL                    |
+| `roomTOPIC`      | VARCHAR     | NOT NULL                    |
 | `response`       | TEXT        |                             |
 
 #### 关键词表
 
 | 列名               | 数据类型   | 属性                          |
 |------------------|-------------|-----------------------------|
-| `id`             | INT         | 自动递增，非空                |
-| `keyword`        | VARCHAR     | 非空                         |
-| `keywordResponse`| VARCHAR     | 非空                         |
+| `id`             | INT         | AUTO INCREMENT, NOT NULL    |
+| `keyword`        | VARCHAR     | NOT NULL                    |
+| `keywordResponse`| VARCHAR     | NOT NULL                    |
 
 ### 添加关键词/回复的说明
 
