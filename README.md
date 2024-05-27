@@ -21,7 +21,7 @@ Developed by Jun He Cui at his internship at 麦斯信通科技(大连)有限公
 ### Message Relay Feature
 
 * Automatically messages bot user in response room when message is not automatically responded to through similar message response or keyword : response pairing.
-  * User response will be relayed back to target group.
+  * User response (message beginning with `!respond`) will be relayed back to target group.
 
 ## Technologies Used
 
@@ -66,7 +66,7 @@ To ensure all features are functional, please connect to a SQL database with the
 
 ## Instructions for Adding Keywords / Responses
 
-When the program is running:
+When the program is running, user may enter the following commands in any WeChat chat:
 
 * `!add <keyword> <response>` will add a keyword paired with a response message to the database.
 * `!editKeyword <index> <keyword>` will add new keywords paired with the response message at that specific index.
@@ -77,7 +77,3 @@ When the program is running:
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
-
-## Contact Information
-
-For support, please contact `cjunhe05@gmail.com`.
