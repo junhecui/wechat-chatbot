@@ -34,7 +34,7 @@ This WeChat assistant chatbot uses keyword recognition and text similarity to au
 2. Connect to an SQL Database and create a `.env` file with the following elements: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `USER_NAME` (Bot user account name), `ADMIN_ROOM_TOPIC` (Room for bot to monitor), and `RESPONSE_ROOM_TOPIC` (Room for responding with the message relay feature).
 3. Run `npm install`.
    * If program does not function correctly, try individually installing `wechaty`, `wechaty-puppet-wechat4u`, `qrcode-terminal`, `mysql`, `mysql2`.
-4. Run `pip install flask sentence-transformers stanza jieba nltk`.
+4. Run `pip install numpy flask sentence-transformers stanza jieba nltk`.
 5. Run `npm start` and `python3.11 api/api.py`
 6. Scan QR code with WeChat account user desires the bot to function on.
 7. The bot will be ready to function.
