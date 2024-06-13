@@ -1,7 +1,6 @@
 node_modules/
 .wwebjs_auth/
 .wwebjs_cache/
-package-lock.json
 bot.memory-card.json
 .env
 __pycache__
